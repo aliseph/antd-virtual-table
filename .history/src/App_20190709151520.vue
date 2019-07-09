@@ -221,13 +221,6 @@ export default {
           fixed: 'right',
           width: 100,
           show: true
-        },
-        {
-          title: 'number',
-          dataIndex: 'number',
-          type: 'number',
-          width: 100,
-          show: true
         }
       ]
       let width = 0
@@ -246,7 +239,7 @@ export default {
       for (let i = 0; i < this.rowLength; i++) {
         row = { num: i + 1 }
         columns.forEach(column => {
-          row[column.dataIndex] = column.title == 'number' ? i + 1 : column.dataIndex + i
+          row[column.dataIndex] = column.dataIndex + i
         })
 
         rows.push(row)

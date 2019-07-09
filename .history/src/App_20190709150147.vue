@@ -4,18 +4,8 @@
       <a-radio-button value="0">单表头</a-radio-button>
       <a-radio-button value="1">多表头</a-radio-button>
     </a-radio-group>
-    <span>
-      &nbsp;&nbsp;列数：
-      <a-input-number :min="1" :max="10" v-model="columnLength" @change="onChange" />
-    </span>
-    <span v-if="multiHeaders==0">
-      &nbsp;&nbsp;行数：
-      <a-input-number :min="1" :max="10" v-model="rowLength" @change="onChange" />
-    </span>
-    &nbsp;&nbsp;
-    <a-button type="primary" @click="onChange">重新生成数据</a-button>&nbsp;&nbsp;
-    <a-button type="default" @click="loading=true">加载中</a-button>
-    <div style="width: 900px;height:600px;margin: 20px auto;">
+
+    <div style="width: 900px;height:600px;margin: auto;">
       <vue-virtual-table :columns="columns" :rows="rows" :loading="loading">
         <template slot="gender" slot-scope="text">
           <a href="javascript:;">{{text}}</a>
@@ -55,7 +45,7 @@ for (let i = 0; i < 100; i++) {
 export default {
   name: "app",
   data: () => ({
-    multiHeaders: '0',
+    multiHeaders: false,
     columns: [],
     loading: false,
     rows: [],
@@ -161,8 +151,6 @@ export default {
         show: true,
       },
     ],
-    columnLength: 100,
-    rowLength: 100
   }),
   components: {
     VueVirtualTable
@@ -171,14 +159,11 @@ export default {
     this.genData();
   },
   methods: {
-    onChangeMulti() {
+    onChangeMulti(event) {
       this.loading = true
       this.rows = []
       this.columns = []
-      this.onChange()
-    },
-    onChange() {
-      if (this.multiHeaders == 0) {
+      if (event.target.value == 0) {
         this.genData()
       } else {
         this.genMultiData()
@@ -187,8 +172,8 @@ export default {
     genMultiData() {
       this.columns = this.multiColumns
       const rows = [];
-      for (let i = 0; i < this.rowLength; i++) {
-        rows.push({
+      for (let i = 0; i < 100; i++) {
+        data.push({
           key: i,
           name: 'John Brown',
           age: i + 1,
@@ -205,7 +190,7 @@ export default {
     },
     genData() {
       console.log('normal');
-      const columns = [
+      let columns = [
         {
           title: 'AA',
           dataIndex: 'AA',
@@ -221,17 +206,10 @@ export default {
           fixed: 'right',
           width: 100,
           show: true
-        },
-        {
-          title: 'number',
-          dataIndex: 'number',
-          type: 'number',
-          width: 100,
-          show: true
         }
       ]
       let width = 0
-      for (let i = 0; i < this.columnLength; i++) {
+      for (let i = 0; i < 10; i++) {
         width = parseInt(Math.random() * 300)
         columns.push({
           title: 'C_' + i,
@@ -242,11 +220,11 @@ export default {
         })
       }
       let row = null
-      const rows = []
-      for (let i = 0; i < this.rowLength; i++) {
+      let rows = []
+      for (let i = 0; i < 110; i++) {
         row = { num: i + 1 }
         columns.forEach(column => {
-          row[column.dataIndex] = column.title == 'number' ? i + 1 : column.dataIndex + i
+          row[column.dataIndex] = column.dataIndex + i
         })
 
         rows.push(row)

@@ -3,18 +3,15 @@
     <a-radio-group v-model="multiHeaders" @change="onChangeMulti">
       <a-radio-button value="0">单表头</a-radio-button>
       <a-radio-button value="1">多表头</a-radio-button>
-    </a-radio-group>
-    <span>
-      &nbsp;&nbsp;列数：
-      <a-input-number :min="1" :max="10" v-model="columnLength" @change="onChange" />
-    </span>
-    <span v-if="multiHeaders==0">
-      &nbsp;&nbsp;行数：
-      <a-input-number :min="1" :max="10" v-model="rowLength" @change="onChange" />
-    </span>
-    &nbsp;&nbsp;
-    <a-button type="primary" @click="onChange">重新生成数据</a-button>&nbsp;&nbsp;
-    <a-button type="default" @click="loading=true">加载中</a-button>
+    </a-radio-group>&nbsp;&nbsp;列数：
+    <a-input-number :min="1" :max="10" v-model="columnLength" @change="onChange" />&nbsp;&nbsp;行数：
+    <a-input-number
+      :min="1"
+      :max="10"
+      v-model="rowLength"
+      @change="onChange"
+      v-if="multiHeaders==0"
+    />
     <div style="width: 900px;height:600px;margin: 20px auto;">
       <vue-virtual-table :columns="columns" :rows="rows" :loading="loading">
         <template slot="gender" slot-scope="text">
@@ -221,13 +218,6 @@ export default {
           fixed: 'right',
           width: 100,
           show: true
-        },
-        {
-          title: 'number',
-          dataIndex: 'number',
-          type: 'number',
-          width: 100,
-          show: true
         }
       ]
       let width = 0
@@ -246,7 +236,7 @@ export default {
       for (let i = 0; i < this.rowLength; i++) {
         row = { num: i + 1 }
         columns.forEach(column => {
-          row[column.dataIndex] = column.title == 'number' ? i + 1 : column.dataIndex + i
+          row[column.dataIndex] = column.dataIndex + i
         })
 
         rows.push(row)

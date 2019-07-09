@@ -225,7 +225,7 @@ export default {
         {
           title: 'number',
           dataIndex: 'number',
-          type: 'number',
+          type: 'currency',
           width: 100,
           show: true
         }
