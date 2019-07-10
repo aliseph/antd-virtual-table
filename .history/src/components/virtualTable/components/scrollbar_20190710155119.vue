@@ -263,8 +263,7 @@ export default {
 }
 
 .@{hd-scrollbar-prefix}-rail-x {
-  transition: height 200ms linear, opacity 200ms linear,
-    background-color 200ms linear;
+  transition: height 200ms linear, opacity 200ms linear, background-color 200ms linear;
   bottom: 0;
   left: 0;
   width: 100%;
@@ -276,8 +275,7 @@ export default {
 }
 
 .@{hd-scrollbar-prefix}-rail-y {
-  transition: width 200ms linear, opacity 200ms linear,
-    background-color 200ms linear;
+  transition: width 200ms linear, opacity 200ms linear, background-color 200ms linear;
   right: 0;
   top: 0;
   height: 100%;

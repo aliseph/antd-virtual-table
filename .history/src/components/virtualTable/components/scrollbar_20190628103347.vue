@@ -25,11 +25,13 @@
   </div>
 </template>
 <script>
+import _ from 'lodash'
 import {
   animationFrameScheduler,
   fromEvent,
   EMPTY,
   Subject,
+  Subscription,
 } from 'rxjs'
 import { tap, takeUntil, filter, switchMap, map, sampleTime } from 'rxjs/operators'
 
@@ -116,15 +118,36 @@ export default {
     }
   },
   methods: {
+    /**
+     * scrollSize 如果是竖向滚动条，则为 用户内容元素的 scrollHeight, 横向的则作为 用户内容元素的 scrollWidth
+     * clientSize 可视区域的 clientHeight clientWidth. 横竖的原理同scrollSize
+     */
     computeStrip() {
+      // 滚动条的容器高度（对于横向时为宽度）
       let currentSize = this.$refs.rail[this.config.wrapSize]
+      /**
+       * 滚动条长度。
+       *
+       * containerSize / scrollSize 是表示视图范围与用户内容元素的比例
+       * 用此比例来决定 滚动条的长度 滚动条容器 * 比例 = 滚动条长度
+       * 但是当用户内容元素无限大的时候，可能会导致滚动条无限小，所以会设置最小长度
+       */
       let thumbLength = currentSize * (this.containerSize / this.scrollSize)
 
       let minThumbLength = this.minThumbLength < 1 ? currentSize * this.minThumbLength : this.minThumbLength
 
+      // 判断是否滚动条长度是否已经小于了设置的最小长度
       this.thumbLength = thumbLength < minThumbLength ? minThumbLength : thumbLength
 
+      // 滚动条容器 - 滚动条长度 = 剩余的空间
       this.maxOffset = Math.round(currentSize - this.thumbLength)
+      /**
+       * 这里计算一个比例
+       * 已高度举例子:
+       * 使用 剩余空间 除以 (用户内容元素的高度 - 视图区域的高度)
+       * 可以把 视图区域的高度 比作 滚动条的长度 用户内容元素的高度 比作 滚动条容器的高度
+       * 所以使用两者剩余空间的比例，来计算 当滚动条滑动1px的时候 用户内容元素应该滑动多少 px，当用户内容元素移动时 来计算 滚动条应该移动多少px
+       */
       this.ratio = this.maxOffset / (this.scrollSize - this.containerSize)
     },
     setTranslate(offset) {
@@ -263,8 +286,7 @@ export default {
 }
 
 .@{hd-scrollbar-prefix}-rail-x {
-  transition: height 200ms linear, opacity 200ms linear,
-    background-color 200ms linear;
+  transition: height 200ms linear, opacity 200ms linear, background-color 200ms linear;
   bottom: 0;
   left: 0;
   width: 100%;
@@ -276,8 +298,7 @@ export default {
 }
 
 .@{hd-scrollbar-prefix}-rail-y {
-  transition: width 200ms linear, opacity 200ms linear,
-    background-color 200ms linear;
+  transition: width 200ms linear, opacity 200ms linear, background-color 200ms linear;
   right: 0;
   top: 0;
   height: 100%;
