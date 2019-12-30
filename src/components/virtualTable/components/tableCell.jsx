@@ -14,7 +14,7 @@ function isInvalidRenderCellText(text) {
 }
 
 export default {
-  name: 'tableCell',
+  name: 'TableCell',
   props: {
     record: {
       type: Object,
@@ -37,6 +37,16 @@ export default {
       if (onCellClick) {
         onCellClick(record, e)
       }
+    },
+    handleDblClick(e) {
+      const {
+        record,
+        column: { onDbclick }
+      } = this
+      if (onDbclick) {
+        onDbclick(this.column, record)
+      }
+      this.$emit('dblclickRow', record)
     }
   },
   render() {
@@ -53,7 +63,7 @@ export default {
     } else {
       text = get(record, dataIndex)
     }
-    let tdProps = {
+    const tdProps = {
       props: {},
       attrs: {},
       class: cls,
@@ -61,7 +71,8 @@ export default {
         width: column.width + 'px'
       },
       on: {
-        click: this.handleClick
+        click: this.handleClick,
+        dblclick: this.handleDblClick
       }
     }
     let colSpan

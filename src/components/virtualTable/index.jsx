@@ -9,46 +9,51 @@ import scrollbar from './components/scrollbar'
 import filterBar from './components/filterBar'
 import columnsDrawer from './components/columnsDrawer'
 import './index.less'
-import _ from 'lodash'
 
 export default {
-  name: 'virtualTable',
+  name: 'VirtualTable',
   props: {
     columns: {
       type: Array,
-      default: () => []
+      default: () => [],
     },
     rows: {
       type: Array,
-      default: () => []
+      default: () => [],
     },
     loading: {
       type: Boolean,
-      default: false
+      default: false,
     },
     multiple: {
       type: Boolean,
-      default: true
+      default: true,
     },
     cacheKey: {
       type: String,
-      default: 'table'
-    }
+      default: 'table',
+    },
+    summaryRow: {
+      type: Object,
+    },
   },
   data() {
     return {
       columnManager: new ColumnManager(this.columns),
       scrollManager: new ScrollManager(),
       destroy$: new Subject(),
+      updateObservable: new Subject(),
+      updateSubscription: null,
       wheelEvent: null,
+      scrollEvent: null,
       offsetX: 0,
       offsetLeft: 0,
       offsetY: 0,
+      offsetTop: 0,
       showDrawer: false,
       showRows: [],
       currentRows: [],
       currentColumns: [],
-      filterColumns: [],
       showColumns: [],
       headerRows: [],
       scrollX: 0,
@@ -67,30 +72,47 @@ export default {
       checkedObservable: new Subject(),
       showColumnsDrawer: false,
       isAnyColumnsFilter: false,
-      showFilterBar: false
+      filterColumns: [],
+      filterVisible: false,
     }
   },
   watch: {
+    // options () {
+    //   return {
+    //     root: this.loaderViewport,
+    //     rootMargin: `0px 0px ${this.loaderDistance}px 0px`
+    //   }
+    // },
+    // observer () {
+    //   return new IntersectionObserver(([{ isIntersecting }]) => {
+    //     isIntersecting && !this.loaderDisable && this.loaderMethod()
+    //   }, this.options)
+    // },
     columns() {
-      this.columnManager = this.columnManager.reset(this.updateColumns(this.columns))
+      this.columnManager = this.columnManager.reset(
+        this.updateColumns(this.columns)
+      )
+      this.filterColumns = []
       this.initOptions()
     },
     rows() {
       this.lastCheckedIndex = -1
+      this.filterColumns = []
       this.initOptions()
     },
     loading() {
       if (this.loading) {
-        if (this.wheelEvent) {
-        }
       } else {
-        this.bindWheel()
       }
-    }
+    },
   },
   methods: {
     initOptions() {
-      this.scrollManager = this.scrollManager.reset(this.rows, this.columnManager, this.$refs)
+      this.scrollManager = this.scrollManager.reset(
+        this.filterRows(),
+        this.columnManager,
+        this.$refs
+      )
 
       this.showColumns = this.scrollManager.showColumns
       this.showRows = this.scrollManager.showRows
@@ -113,6 +135,86 @@ export default {
       this.leftColumnsWidth = this.scrollManager.leftColumnsWidth
 
       this.isAnyColumnsFilter = this.columnManager.isAnyColumnsFilter()
+      this.$nextTick(() => {
+        this.checkedObservable.next()
+      })
+    },
+    filterRows() {
+      let currentRows = [...this.rows]
+      this.filterColumns.forEach(column => {
+        if (column.symbol) {
+          switch (column.symbol) {
+            case 'like':
+              currentRows = currentRows.filter(row =>
+                row[column.dataIndex].includes(column.condition)
+              )
+              break
+            case 'eq':
+              currentRows = currentRows.filter(
+                row => row[column.dataIndex] == column.condition
+              )
+              break
+            case 'ne':
+              currentRows = currentRows.filter(
+                row => row[column.dataIndex] != column.condition
+              )
+              break
+            case 'isNull':
+              currentRows = currentRows.filter(
+                row =>
+                  row[column.dataIndex] == null ||
+                  row[column.dataIndex] == undefined
+              )
+              break
+            case 'isNotNull':
+              currentRows = currentRows.filter(
+                row =>
+                  row[column.dataIndex] != null &&
+                  row[column.dataIndex] != undefined
+              )
+              break
+            case 'gt':
+              currentRows = currentRows.filter(
+                row => row[column.dataIndex] > column.condition
+              )
+              break
+            case 'ge':
+              currentRows = currentRows.filter(
+                row => row[column.dataIndex] >= column.condition
+              )
+              break
+            case 'lt':
+              currentRows = currentRows.filter(
+                row => row[column.dataIndex] < column.condition
+              )
+              break
+            case 'le':
+              currentRows = currentRows.filter(
+                row => row[column.dataIndex] <= column.condition
+              )
+              break
+            case 'eqzero':
+              currentRows = currentRows.filter(
+                row => row[column.dataIndex] == 0
+              )
+              break
+            case 'nezero':
+              currentRows = currentRows.filter(
+                row => row[column.dataIndex] != 0
+              )
+              break
+            case 'ltzero':
+              currentRows = currentRows.filter(row => row[column.dataIndex] < 0)
+              break
+            case 'gtzero':
+              currentRows = currentRows.filter(row => row[column.dataIndex] > 0)
+              break
+            default:
+              break
+          }
+        }
+      })
+      return currentRows
     },
     bindWheel() {
       if (!this.wheelEvent && this.$refs.container) {
@@ -124,7 +226,7 @@ export default {
               const { deltaX, deltaY } = event
               return {
                 x: deltaX > 0 ? 100 : deltaX < 0 ? -100 : 0,
-                y: deltaY > 0 ? 100 : deltaY < 0 ? -100 : 0
+                y: deltaY > 0 ? 100 : deltaY < 0 ? -100 : 0,
               }
             }),
             sampleTime(0, animationFrameScheduler)
@@ -135,18 +237,44 @@ export default {
           })
       }
     },
+    bindScroll() {
+      this.scrollEvent = fromEvent(this.$refs.scrollContainer, 'scroll')
+        .pipe(
+          takeUntil(this.destroy$),
+          tap(event => event.preventDefault()),
+          sampleTime(0, animationFrameScheduler),
+          map(event => {
+            const { scrollTop, scrollLeft } = event.target
+            return {
+              x: scrollLeft,
+              y: scrollTop,
+            }
+          })
+        )
+        .subscribe(offset => {
+          if (this.offsetX !== offset.x) {
+            this.offsetX = offset.x
+            this.onScrollX(this.offsetX)
+          }
+          if (this.offsetY !== offset.y) {
+            this.offsetY = offset.y
+            this.onScrollY(this.offsetY)
+          }
+        })
+    },
     updateColumns(cols = []) {
       const columns = []
       const { $slots, $scopedSlots } = this
       cols.forEach(col => {
         const { slots = {}, scopedSlots = {}, ...resetProps } = col
         const column = {
-          ...resetProps
+          ...resetProps,
         }
         Object.keys(slots).forEach(key => {
           const name = slots[key]
           if (column[key] === undefined && $slots[name]) {
-            column[key] = $slots[name].length === 1 ? $slots[name][0] : $slots[name]
+            column[key] =
+              $slots[name].length === 1 ? $slots[name][0] : $slots[name]
           }
         })
         Object.keys(scopedSlots).forEach(key => {
@@ -178,21 +306,46 @@ export default {
     },
     onScrollY(offset) {
       this.$emit('on-scroll-y', offset)
-      this.scrollManager.onScrollTop(offset)
-      this.$nextTick(() => {
-        this.showRows = this.scrollManager.showRows
-        this.offsetY = offset
-      })
+      const lastClusterRowNum = this.scrollManager.lastClusterRowNum
+
+      if (lastClusterRowNum != this.scrollManager.onScrollTop(offset)) {
+        this.updateObservable.next({ y: offset })
+      }
+    },
+    updateTable(offset) {
+      console.log(offset)
+      this.showRows = this.scrollManager.showRows
+      this.offsetTop = Math.max(this.scrollManager.offsetTop - offset.y, 0)
+      // this.$refs.topPlaceholder &&
+      //   (this.$refs.topPlaceholder.style.height =
+      //     this.scrollManager.offsetTop + 'px')
+
+      // this.$refs.bottomPlaceholder &&
+      //   (this.$refs.bottomPlaceholder.style.height =
+      //     this.scrollManager.offsetBottom + 'px')
+      this.offsetY = offset.y
     },
     renderHeader() {
-      const { headerRows, currentRows, scrollX, offsetX, leftColumnsWidth, rightFixStyle, multiple } = this
+      const {
+        headerRows,
+        currentRows,
+        scrollX,
+        offsetX,
+        leftColumnsWidth,
+        rightFixStyle,
+        multiple,
+      } = this
       const headerProps = {
         class: {
           'hd-table-header': true,
-          'hd-table-header-empty': !headerRows || !headerRows.length || !scrollX
-        }
+          'hd-table-header-empty':
+            !headerRows || !headerRows.length || !scrollX,
+        },
       }
-      const checkedCount = this.currentRows.reduce((sum, row) => sum + (row._checked ? 1 : 0), 0)
+      const checkedCount = this.currentRows.reduce(
+        (sum, row) => sum + (row._checked ? 1 : 0),
+        0
+      )
 
       const onCheckedAll = checked => {
         this.currentRows = this.currentRows.map((row, index) => {
@@ -215,9 +368,13 @@ export default {
       }
 
       const onInvisible = column => {
-        const currentDataList = this.columnManager.columnList(this.currentColumns)
-        let realRecord = currentDataList.find(data => data.dataIndex == column.dataIndex)
-        realRecord = realRecord ? realRecord : {}
+        const currentDataList = this.columnManager.columnList(
+          this.currentColumns
+        )
+        let realRecord = currentDataList.find(
+          data => data.dataIndex == column.dataIndex
+        )
+        realRecord = realRecord || {}
         realRecord.show = !realRecord.show
         this.columnManager = this.columnManager.reset(this.currentColumns)
         this.initOptions()
@@ -225,11 +382,16 @@ export default {
       }
 
       const onFilter = column => {
-        this.$emit('filter', column)
-        if (this.filterColumns.findIndex(condition => condition.dataIndex === column.dataIndex) === -1) {
-          this.filterColumns.push(column)
+        // this.$emit("filter", column);
+        const index = this.filterColumns.findIndex(
+          col => col.dataIndex == column.dataIndex
+        )
+        if (index > -1) {
+          this.filterColumns.splice(index, 1)
+        } else {
+          this.filterColumns.push({ ...column })
         }
-        this.showFilterBar = true
+        this.filterVisible = true
       }
 
       return (
@@ -258,7 +420,16 @@ export default {
       )
     },
     renderBody() {
-      const { scrollX, offsetLeft, offsetX, rightFixStyle, showColumns, showRows, leftColumns, rightColumns } = this
+      const {
+        scrollX,
+        offsetLeft,
+        offsetX,
+        rightFixStyle,
+        showColumns,
+        showRows,
+        leftColumns,
+        rightColumns,
+      } = this
 
       const onChecked = (checked, row, index) => {
         const _row = { ...row, _checked: checked }
@@ -289,26 +460,31 @@ export default {
       }
 
       const onShowDetail = row => {
-        this.$emit('showDetail', row)
+        this.$emit('showDetail', row, row._index)
       }
 
-      return showRows && showRows.length
-        ? showRows.map((row, index) => (
-            <tableRow
-              key={index}
-              scrollX={scrollX}
-              rightFixStyle={rightFixStyle}
-              offsetX={offsetX}
-              offsetLeft={offsetLeft}
-              row={row}
-              centerColumns={showColumns}
-              leftColumns={leftColumns}
-              rightColumns={rightColumns}
-              onChecked={checked => onChecked(checked, row, index)}
-              onShowDetail={onShowDetail}
-            />
-          ))
-        : ''
+      const onDblclickRow = row => {
+        event.stopPropagation()
+        this.$emit('dblclick-row', row, row._index)
+      }
+
+      return showRows.map((row, index) => (
+        <tableRow
+          key={index}
+          scrollX={scrollX}
+          rightFixStyle={rightFixStyle}
+          offsetX={offsetX}
+          offsetLeft={offsetLeft}
+          row={row}
+          centerColumns={showColumns}
+          leftColumns={leftColumns}
+          rightColumns={rightColumns}
+          onChecked={checked => onChecked(checked, row, index)}
+          onShowDetail={onShowDetail}
+          onDblclickRow={onDblclickRow}
+          style={{ transform: `translate3d(0,${-1 * this.offsetTop}px,0)` }}
+        />
+      ))
     },
     renderFooter() {
       const {
@@ -321,13 +497,15 @@ export default {
         showColumns,
         leftColumns,
         rightColumns,
-        checkedObservable
+        checkedObservable,
+        summaryRow,
       } = this
       const footerProps = {
         class: {
           'hd-table-footer': true,
-          'hd-table-footer-empty': !headerRows || !headerRows.length || !scrollX
-        }
+          'hd-table-footer-empty':
+            !headerRows || !headerRows.length || !scrollX,
+        },
       }
       return (
         <div {...footerProps}>
@@ -341,31 +519,46 @@ export default {
             leftColumns={leftColumns}
             rightColumns={rightColumns}
             checkedObservable={checkedObservable}
+            summaryRow={summaryRow}
           />
         </div>
       )
-    }
+    },
   },
   mounted() {
-    this.columnManager = this.columnManager.reset(this.updateColumns(this.columns))
-    this.scrollManager = this.scrollManager.reset(this.rows, this.columnManager, this.$refs)
+    this.columnManager = this.columnManager.reset(
+      this.updateColumns(this.columns)
+    )
+    this.scrollManager = this.scrollManager.reset(
+      this.rows,
+      this.columnManager,
+      this.$refs
+    )
 
     this.initOptions()
-    this.bindWheel()
+    this.bindScroll()
+
+    this.updateSubscription = this.updateObservable
+      .pipe(takeUntil(this.destroy$), sampleTime(0, animationFrameScheduler))
+      .subscribe(offset => {
+        this.updateTable(offset)
+      })
 
     fromEvent(this.$refs.container, 'resize')
-      .pipe(
-        takeUntil(this.destroy$),
-        sampleTime(300)
-      )
+      .pipe(takeUntil(this.destroy$), sampleTime(0, animationFrameScheduler))
       .subscribe(() => {
-        this.scrollManager = this.scrollManager.reset(this.rows, this.columnManager, this.$refs)
+        this.scrollManager = this.scrollManager.reset(
+          this.rows,
+          this.columnManager,
+          this.$refs
+        )
         this.initOptions()
       })
   },
   beforeDestroy() {
     this.destroy$.next()
     this.destroy$.complete()
+    this.updateSubscription.unsubscribe()
   },
   render() {
     const {
@@ -381,11 +574,9 @@ export default {
       offsetX,
       bodyStyle,
       showRows,
-      filterColumns,
-      showFilterBar,
       currentColumns,
       columnManager,
-      isAnyColumnsFilter
+      isAnyColumnsFilter,
     } = this
 
     const onUpdateColumns = columns => {
@@ -393,33 +584,55 @@ export default {
       this.initOptions()
     }
 
-    const resize = () => {
-      this.scrollManager = this.scrollManager.reset(this.rows, this.columnManager, this.$refs)
-      this.initOptions()
-    }
+    // const resize = () => {
+    //   this.scrollManager = this.scrollManager.reset(this.rows, this.columnManager, this.$refs)
+    //   this.initOptions()
+    // }
 
-    const onClear = () => {
-      this.filterColumns = []
-      this.showFilterBar = false
+    const onFilter = columns => {
+      this.filterColumns = columns
+      console.log(this.filterColumns)
+      this.$emit('filter', this.filterColumns)
+      this.initOptions()
     }
 
     return (
       <div class="hd-table-container" ref="container">
         <div class={tableClass}>
           {!loading && this.renderHeader()}
-          <div class="hd-table-body-container">
+          <div
+            class="hd-table-body-container"
+            ref="scrollContainer"
+            key="bodyContainer"
+          >
             {loading && (
               <div class="hd-table-spin-container">
                 <a-spin />
               </div>
             )}
-            {!loading && (!showRows || !showRows.length) && <div class="hd-table-placeholder">暂无数据</div>}
+            {!loading && (!showRows || !showRows.length) && (
+              <div class="hd-table-placeholder">
+                <a-empty
+                  class=" ant-empty-normal"
+                  image="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNDEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMCAxKSIgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj4KICAgIDxlbGxpcHNlIGZpbGw9IiNGNUY1RjUiIGN4PSIzMiIgY3k9IjMzIiByeD0iMzIiIHJ5PSI3Ii8+CiAgICA8ZyBmaWxsLXJ1bGU9Im5vbnplcm8iIHN0cm9rZT0iI0Q5RDlEOSI+CiAgICAgIDxwYXRoIGQ9Ik01NSAxMi43Nkw0NC44NTQgMS4yNThDNDQuMzY3LjQ3NCA0My42NTYgMCA0Mi45MDcgMEgyMS4wOTNjLS43NDkgMC0xLjQ2LjQ3NC0xLjk0NyAxLjI1N0w5IDEyLjc2MVYyMmg0NnYtOS4yNHoiLz4KICAgICAgPHBhdGggZD0iTTQxLjYxMyAxNS45MzFjMC0xLjYwNS45OTQtMi45MyAyLjIyNy0yLjkzMUg1NXYxOC4xMzdDNTUgMzMuMjYgNTMuNjggMzUgNTIuMDUgMzVoLTQwLjFDMTAuMzIgMzUgOSAzMy4yNTkgOSAzMS4xMzdWMTNoMTEuMTZjMS4yMzMgMCAyLjIyNyAxLjMyMyAyLjIyNyAyLjkyOHYuMDIyYzAgMS42MDUgMS4wMDUgMi45MDEgMi4yMzcgMi45MDFoMTQuNzUyYzEuMjMyIDAgMi4yMzctMS4zMDggMi4yMzctMi45MTN2LS4wMDd6IiBmaWxsPSIjRkFGQUZBIi8+CiAgICA8L2c+CiAgPC9nPgo8L3N2Zz4K"
+                ></a-empty>
+              </div>
+            )}
 
             <div class="hd-table-body" style={bodyStyle} ref="bodyScroll">
-              <div class="hd-table-top-placeholder" ref="topPlaceholder" />
+              <div
+                class="hd-table-top-placeholder"
+                ref="topPlaceholder"
+                key="topPlaceholder"
+              />
               {!loading && this.renderBody()}
+              <div
+                class="hd-table-bottom-placeholder"
+                ref="bottomPlaceholder"
+                key="bottomPlaceholder"
+              />
             </div>
-            {!loading && isScrollY && (
+            {false && !!isScrollY && (
               <scrollbar
                 ref="scrollbarY"
                 scrollSize={scrollY}
@@ -428,7 +641,7 @@ export default {
                 onInput={this.onScrollY}
               />
             )}
-            {!loading && isScrollX && (
+            {false && !!isScrollX && (
               <scrollbar
                 ref="scrollbarX"
                 scrollSize={scrollX}
@@ -441,15 +654,15 @@ export default {
           </div>
           {!loading && this.renderFooter()}
         </div>
-        {!loading && isAnyColumnsFilter && showRows && !!showRows.length && (
+        {!loading && isAnyColumnsFilter && (
           <filterBar
-            columns={filterColumns}
-            value={showFilterBar}
-            onInput={visible => (this.showFilterBar = visible)}
-            onClear={onClear}
+            columns={this.filterColumns}
+            onFilter={onFilter}
+            value={this.filterVisible}
+            onInput={value => (this.filterVisible = value)}
           />
         )}
-        {!loading && currentColumns && !!currentColumns.length && (
+        {!loading && !!currentColumns && !!currentColumns.length && (
           <columnsDrawer
             value={this.showColumnsDrawer}
             onInput={visible => (this.showColumnsDrawer = visible)}
@@ -461,5 +674,5 @@ export default {
         )}
       </div>
     )
-  }
+  },
 }

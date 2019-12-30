@@ -1,7 +1,7 @@
 import tableHeaderCell from './tableHeaderCell'
 
 export default {
-  name: 'tableHeaderRow',
+  name: 'TableHeaderRow',
   props: {
     row: {
       type: Array,

@@ -1,3 +1,4 @@
+import _ from 'lodash'
 export default class columnManager {
   constructor(columns) {
     this.columns = columns.map(column => ({
@@ -7,7 +8,7 @@ export default class columnManager {
   }
 
   treeToArray(tree, id = 'id', pid = 'pid', children = 'children') {
-    let result = []
+    const result = []
     let temp = []
     tree.forEach((item, index) => {
       result.push(item)
@@ -24,7 +25,7 @@ export default class columnManager {
   }
 
   columnList(columns) {
-    return this.treeToArray(columns, 'dataIndex', 'parentDateIndex')
+    return this.treeToArray(columns, 'dataIndex', 'parentDataIndex')
   }
 
   isAnyColumnsFilter() {

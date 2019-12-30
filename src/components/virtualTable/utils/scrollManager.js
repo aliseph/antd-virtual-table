@@ -10,11 +10,13 @@ export default class scrollManager {
       this.rows = rows.map((row, index) => ({
         ...row,
         _index: index,
-        _checked: !!row._checked
+        _checked: !!row._checked,
       }))
       this.$refs = $refs
       this.columnManager = columnManager
-      this.containerY = $refs.container.clientHeight - this.rowHeight // 滚动容器的高度
+      this.containerY =
+        $refs.container.clientHeight -
+        this.rowHeight * (this.columnManager.headerColumnsRows().length + 1) // 滚动容器的高度
       this.containerX = $refs.container.clientWidth // 滚动容器的宽度
 
       this.initOptions()
@@ -34,19 +36,29 @@ export default class scrollManager {
     this.lastScrollLeft = 0
     this.lastScrollTop = 0
 
+    this.offsetTop = 0
+    this.offsetBottom = 0
+
     this.leftColumnsWidth = this.columnManager
       .leftLeafColumns()
-      .reduce((sum, column) => sum + (column.show && column.width ? column.width : 0), this.totalCellWidth)
+      .reduce(
+        (sum, column) => sum + (column.show && column.width ? column.width : 0),
+        this.totalCellWidth
+      )
     this.rightColumnsWidth = this.columnManager
       .leftLeafColumns()
-      .reduce((sum, column) => sum + (column.show && column.width ? column.width : 0), this.totalCellWidth)
+      .reduce(
+        (sum, column) => sum + (column.show && column.width ? column.width : 0),
+        this.totalCellWidth
+      )
 
-    let centerColumns = this.columnManager.leafColumns()
+    const centerColumns = this.columnManager.leafColumns()
     // 滚动范围的宽度
     this.scrollX =
       centerColumns && centerColumns.length
         ? centerColumns.reduce(
-            (sum, column) => sum + (column.show && column.width ? column.width : 0),
+            (sum, column) =>
+              sum + (column.show && column.width ? column.width : 0),
             this.totalCellWidth + 20
           )
         : 0
@@ -55,33 +67,33 @@ export default class scrollManager {
 
     // 滚动范围的高度
     this.scrollY =
-      this.rows && this.rows.length
-        ? this.rows.reduce(
-            (sum, row) => sum + this.rowHeight,
-            this.rowHeight * this.columnManager.headerColumnsRows().length + 20
-          )
-        : 0
+      this.rows && this.rows.length ? this.rows.length * this.rowHeight + 20 : 0
 
     this.rightFixStyle = {
-      right: this.scrollX - this.containerX + 'px'
+      right: this.scrollX - this.containerX + 'px',
     }
 
-    this.keepRows = Math.floor(((this.containerY / this.rowHeight) * 3) / 2) + 4
+    this.keepRows = 20
     this.remainRows = Math.floor(this.keepRows * 0.2)
     this.benchRows = this.keepRows - this.remainRows
     this.isClusterizeY = this.keepRows < this.rows.length
     this.visibleZoneHeight = this.remainRows * this.rowHeight
-    this.isScrollY = this.rows && this.rows.length && this.scrollY > this.containerY
+    this.isScrollY =
+      this.rows && this.rows.length && this.scrollY > this.containerY
 
-    let minColumnWidth = _.min(this.columnManager.centerLeafColumns().map(column => column.width))
+    const minColumnWidth = _.min(
+      this.columnManager.centerLeafColumns().map(column => column.width)
+    )
 
-    this.keepColumns = Math.floor(((this.containerX / minColumnWidth) * 3) / 2) + 4
+    this.keepColumns =
+      Math.floor(((this.containerX / minColumnWidth) * 3) / 2) + 8
     this.remainColumns = Math.floor(this.keepColumns * 0.2)
     this.benchColumns = this.keepColumns - this.remainColumns
-    this.isClusterizeX = this.keepColumns < this.columnManager.centerLeafColumns().length
+    this.isClusterizeX =
+      this.keepColumns < this.columnManager.centerLeafColumns().length
 
     if (this.isClusterizeX) {
-      let arr = []
+      const arr = []
       let startIndex = 0
       while (startIndex < this.columnManager.centerLeafColumns().length) {
         arr.push(
@@ -107,16 +119,18 @@ export default class scrollManager {
   reset(rows, columnManager, $refs) {
     if ($refs && $refs.container) {
       if (this.orderBy && this.orderByKey) {
-        this.rows = _.orderBy(rows, [this.orderByKey], [this.orderBy]).map((row, index) => ({
-          ...row,
-          _index: index,
-          _checked: !!row._checked
-        }))
+        this.rows = _.orderBy(rows, [this.orderByKey], [this.orderBy]).map(
+          (row, index) => ({
+            ...row,
+            _index: index,
+            _checked: !!row._checked,
+          })
+        )
       } else {
         this.rows = rows.map((row, index) => ({
           ...row,
           _index: index,
-          _checked: !!row._checked
+          _checked: !!row._checked,
         }))
       }
       this.$refs = $refs
@@ -139,7 +153,10 @@ export default class scrollManager {
     if (!this.isScrollY) {
       this.showRows = this.rows
     } else {
-      this.showRows = this.rows.slice(this.lastStartRow, this.keepRows + this.lastStartRow)
+      this.showRows = this.rows.slice(
+        this.lastStartRow,
+        this.keepRows + this.lastStartRow
+      )
     }
     return this.rows
   }
@@ -147,7 +164,7 @@ export default class scrollManager {
   bodyStyle() {
     return {
       width: this.scrollX ? this.scrollX + 'px' : '100%',
-      height: this.scrollY ? this.scrollY + 'px' : '100%'
+      height: this.scrollY ? this.scrollY + 'px' : '100%',
       // pointerEvents: this.isScrolling ? 'none' : '',
     }
   }
@@ -156,21 +173,27 @@ export default class scrollManager {
     return {
       'hd-table': true,
       'hd-table-reach-left': !this.offsetX,
-      'hd-table-reach-right': Math.abs(this.scrollX - this.containerX - this.offsetX) < 0.001
+      'hd-table-reach-right':
+        Math.abs(this.scrollX - this.containerX - this.offsetX) < 0.001,
     }
   }
 
   onScrollTop(offsetY) {
     this.offsetY = offsetY
-    if (this.lastClusterRowNum != (this.lastClusterRowNum = this.getClusterRowNum(offsetY))) {
+    if (
+      this.lastClusterRowNum !=
+      (this.lastClusterRowNum = this.getClusterRowNum(offsetY))
+    ) {
       this.lastStartRow =
-        this.remainRows * this.lastClusterRowNum + this.keepRows > this.rows.length
+        this.remainRows * this.lastClusterRowNum + this.keepRows >
+        this.rows.length
           ? this.rows.length - this.keepRows
           : this.remainRows * this.lastClusterRowNum
 
       this.updateRowsByY()
     }
-    this.$refs.bodyScroll.style.transform = `translate3d(0,${-1 * this.offsetY}px,0)`
+    return this.lastClusterRowNum
+    // this.$refs.bodyScroll.style.transform = `translate3d(0,${-1 * this.offsetY}px,0)`
   }
   getClusterRowNum(scrollTop) {
     return Math.floor(scrollTop / this.visibleZoneHeight) || 0
@@ -179,20 +202,26 @@ export default class scrollManager {
     if (!this.isClusterizeY) {
       this.showRows = this.rows
     } else {
-      let offsetTop = this.lastStartRow * this.rowHeight
-      offsetTop = offsetTop <= 0 ? 0 : offsetTop
+      this.offsetTop = this.lastStartRow * this.rowHeight
+      this.offsetTop = this.offsetTop <= 0 ? 0 : this.offsetTop
 
-      let offsetBottom = this.tableHeight - this.keepRows * this.rowHeight - offsetTop
-      offsetBottom = offsetBottom <= 0 ? 0 : offsetBottom
+      this.offsetBottom =
+        this.scrollY - this.keepRows * this.rowHeight - this.offsetTop
+      this.offsetBottom = this.offsetBottom <= 0 ? 0 : this.offsetBottom
 
-      this.showRows = this.rows.slice(this.lastStartRow, this.keepRows + this.lastStartRow)
-      this.$refs.topPlaceholder && (this.$refs.topPlaceholder.style.height = offsetTop + 'px')
+      this.showRows = this.rows.slice(
+        this.lastStartRow,
+        this.keepRows + this.lastStartRow
+      )
     }
   }
 
   onScrollLeft(offsetX) {
     this.offsetX = offsetX
-    if (this.lastClusterColumnNum != (this.lastClusterColumnNum = this.getClusterColumnNum(offsetX))) {
+    if (
+      this.lastClusterColumnNum !=
+      (this.lastClusterColumnNum = this.getClusterColumnNum(offsetX))
+    ) {
       this.lastStartColumn = this.remainColumns * this.lastClusterColumnNum
       this.updateColumnsByX()
       this.updateZoneByX()
@@ -200,8 +229,7 @@ export default class scrollManager {
   }
   getClusterColumnNum(scrollLeft) {
     let temp = scrollLeft
-    let num = this.columnsBenchWidthArr.findIndex(width => (temp -= width) <= 0)
-    return num
+    return this.columnsBenchWidthArr.findIndex(width => (temp -= width) <= 0)
   }
   updateColumnsByX() {
     if (!this.isClusterizeX) {

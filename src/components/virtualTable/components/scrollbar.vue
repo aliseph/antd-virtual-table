@@ -9,32 +9,27 @@
   </div>-->
   <div
     :class="{
-    'sheet-scrollbar-rail-x': horizontal,
-    'sheet-scrollbar-rail-y': !horizontal
+      'sheet-scrollbar-rail-x': horizontal,
+      'sheet-scrollbar-rail-y': !horizontal
     }"
     ref="rail"
   >
     <div
       :class="{
-    'sheet-scrollbar-thumb-x': horizontal,
-    'sheet-scrollbar-thumb-y': !horizontal
-    }"
+        'sheet-scrollbar-thumb-x': horizontal,
+        'sheet-scrollbar-thumb-y': !horizontal
+      }"
       :style="thumbStyle"
       ref="thumb"
     ></div>
   </div>
 </template>
 <script>
-import {
-  animationFrameScheduler,
-  fromEvent,
-  EMPTY,
-  Subject,
-} from 'rxjs'
+import { animationFrameScheduler, fromEvent, EMPTY, Subject } from 'rxjs'
 import { tap, takeUntil, filter, switchMap, map, sampleTime } from 'rxjs/operators'
 
 export default {
-  name: 'scrollbar',
+  name: 'Scrollbar',
   props: {
     // 是否作为横向
     horizontal: {
@@ -76,7 +71,7 @@ export default {
       // 记录当前的偏移量，用于触发 滚动到头部和尾部的事件
       currentScroll: 0,
       scheduledAnimationFrame: false,
-      isScrolling: false,
+      isScrolling: false
     }
   },
   computed: {
@@ -105,10 +100,10 @@ export default {
     thumbStyle() {
       return {
         'will-change': 'transform',
-        [this.config.thumbLength]: this.thumbLength + 'px',
+        [this.config.thumbLength]: this.thumbLength + 'px'
         // [this.config.thumbWidth]: this.thumbWidth + 'px',
       }
-    },
+    }
   },
   watch: {
     value(value) {
@@ -116,15 +111,36 @@ export default {
     }
   },
   methods: {
+    /**
+     * scrollSize 如果是竖向滚动条，则为 用户内容元素的 scrollHeight, 横向的则作为 用户内容元素的 scrollWidth
+     * clientSize 可视区域的 clientHeight clientWidth. 横竖的原理同scrollSize
+     */
     computeStrip() {
-      let currentSize = this.$refs.rail[this.config.wrapSize]
-      let thumbLength = currentSize * (this.containerSize / this.scrollSize)
+      // 滚动条的容器高度（对于横向时为宽度）
+      const currentSize = this.$refs.rail[this.config.wrapSize]
+      /**
+       * 滚动条长度。
+       *
+       * containerSize / scrollSize 是表示视图范围与用户内容元素的比例
+       * 用此比例来决定 滚动条的长度 滚动条容器 * 比例 = 滚动条长度
+       * 但是当用户内容元素无限大的时候，可能会导致滚动条无限小，所以会设置最小长度
+       */
+      const thumbLength = currentSize * (this.containerSize / this.scrollSize)
 
-      let minThumbLength = this.minThumbLength < 1 ? currentSize * this.minThumbLength : this.minThumbLength
+      const minThumbLength = this.minThumbLength < 1 ? currentSize * this.minThumbLength : this.minThumbLength
 
+      // 判断是否滚动条长度是否已经小于了设置的最小长度
       this.thumbLength = thumbLength < minThumbLength ? minThumbLength : thumbLength
 
+      // 滚动条容器 - 滚动条长度 = 剩余的空间
       this.maxOffset = Math.round(currentSize - this.thumbLength)
+      /**
+       * 这里计算一个比例
+       * 已高度举例子:
+       * 使用 剩余空间 除以 (用户内容元素的高度 - 视图区域的高度)
+       * 可以把 视图区域的高度 比作 滚动条的长度 用户内容元素的高度 比作 滚动条容器的高度
+       * 所以使用两者剩余空间的比例，来计算 当滚动条滑动1px的时候 用户内容元素应该滑动多少 px，当用户内容元素移动时 来计算 滚动条应该移动多少px
+       */
       this.ratio = this.maxOffset / (this.scrollSize - this.containerSize)
     },
     setTranslate(offset) {
@@ -139,38 +155,30 @@ export default {
   },
   mounted() {
     this.computeStrip()
-    const mouseDown$ =
-      this.$refs.thumb && this.$refs.thumb
-        ? fromEvent(this.$refs.thumb, 'mousedown')
-        : EMPTY;
-    const mouseMove$ = fromEvent(document, 'mousemove');
-    const mouseUp$ = fromEvent(document, 'mouseup');
-    const selectstart$ = fromEvent(document, 'selectstart');
+    const mouseDown$ = this.$refs.thumb && this.$refs.thumb ? fromEvent(this.$refs.thumb, 'mousedown') : EMPTY
+    const mouseMove$ = fromEvent(document, 'mousemove')
+    const mouseUp$ = fromEvent(document, 'mouseup')
+    const selectstart$ = fromEvent(document, 'selectstart')
 
-    const click$ =
-      this.$refs.rail && this.$refs.rail
-        ? fromEvent(this.$refs.rail, 'click')
-        : EMPTY;
+    const click$ = this.$refs.rail && this.$refs.rail ? fromEvent(this.$refs.rail, 'click') : EMPTY
 
     mouseDown$
       .pipe(
-        takeUntil(this.destroy$),// 只有鼠标左键可以拖动
+        takeUntil(this.destroy$), // 只有鼠标左键可以拖动
         filter(event => event.button === 0),
         tap(event => {
-          event.stopImmediatePropagation();
-          this.documentSelectstart = selectstart$
-            .pipe(takeUntil(this.destroy$))
-            .subscribe(e => {
-              e.preventDefault()
-              return false
-            })
+          event.stopImmediatePropagation()
+          this.documentSelectstart = selectstart$.pipe(takeUntil(this.destroy$)).subscribe(e => {
+            e.preventDefault()
+            return false
+          })
         }),
         map(event => ({
           pos: {
             x: this.horizontal ? this.currentScroll : 0,
-            y: this.horizontal ? 0 : this.currentScroll,
+            y: this.horizontal ? 0 : this.currentScroll
           },
-          event,
+          event
         })),
         switchMap(initialState => {
           const initialPos = initialState.pos
@@ -179,7 +187,7 @@ export default {
 
           return mouseMove$.pipe(
             map(moveEvent => {
-              moveEvent.stopImmediatePropagation();
+              moveEvent.stopImmediatePropagation()
               if (this.horizontal) {
                 return Math.round(moveEvent.clientX - clientX + initialPos.x)
               } else {
@@ -190,34 +198,36 @@ export default {
               mouseUp$.pipe(
                 tap(() => {
                   this.documentSelectstart.unsubscribe()
-                }),
-              ),
+                })
+              )
             ),
-            sampleTime(0, animationFrameScheduler),
-          );
-        }),
+            sampleTime(0, animationFrameScheduler)
+          )
+        })
       )
       .subscribe(offset => {
         this.setTranslate(offset)
       })
 
-    click$.pipe(
-      tap(event => event.stopPropagation()),
-      filter(event => event.target == this.$refs.rail)
-    ).subscribe((event) => {
-      let position = this.$refs.thumb.getBoundingClientRect()
+    click$
+      .pipe(
+        tap(event => event.stopPropagation()),
+        filter(event => event.target == this.$refs.rail)
+      )
+      .subscribe(event => {
+        const position = this.$refs.thumb.getBoundingClientRect()
 
-      let movement = event[this.config.thumbAxis] - position[this.config.direction]
+        const movement = event[this.config.thumbAxis] - position[this.config.direction]
 
-      // The next Horizontal Value will be
-      let offset = this.currentScroll + movement - this.thumbLength / 2
-      this.setTranslate(offset)
-    })
+        // The next Horizontal Value will be
+        const offset = this.currentScroll + movement - this.thumbLength / 2
+        this.setTranslate(offset)
+      })
   },
   beforeDestroy() {
     this.destroy$.next()
     this.destroy$.complete()
-  },
+  }
 }
 </script>
 <style lang="less">
@@ -263,8 +273,7 @@ export default {
 }
 
 .@{hd-scrollbar-prefix}-rail-x {
-  transition: height 200ms linear, opacity 200ms linear,
-    background-color 200ms linear;
+  transition: height 200ms linear, opacity 200ms linear, background-color 200ms linear;
   bottom: 0;
   left: 0;
   width: 100%;
@@ -276,8 +285,7 @@ export default {
 }
 
 .@{hd-scrollbar-prefix}-rail-y {
-  transition: width 200ms linear, opacity 200ms linear,
-    background-color 200ms linear;
+  transition: width 200ms linear, opacity 200ms linear, background-color 200ms linear;
   right: 0;
   top: 0;
   height: 100%;

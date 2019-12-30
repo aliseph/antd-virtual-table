@@ -1,7 +1,7 @@
 import tableCell from './tableCell'
 
 export default {
-  name: 'tableRow',
+  name: 'TableRow',
   props: {
     row: {
       type: Object,
@@ -86,6 +86,10 @@ export default {
       this.$emit('showDetail', row)
     }
 
+    const onDblclickRow = row => {
+      this.$emit('dblclickRow', row)
+    }
+
     return (
       <div {...rowProps}>
         <div {...leftPlaceholderProps} />
@@ -98,17 +102,22 @@ export default {
             <a-icon type="layout" onClick={onShowDetail} />
           </div>
           {leftColumns.map((column, index) => (
-            <tableCell column={column} record={row} key={index} />
+            <tableCell column={column} record={row} key={index} onDblclickRow={onDblclickRow} />
           ))}
         </div>
         <div {...centerProps}>
           {centerColumns.map((column, index) => (
-            <tableCell column={column} record={row} key={column.dateIndex + '_' + index} />
+            <tableCell
+              column={column}
+              record={row}
+              key={column.dateIndex + '_' + index}
+              onDblclickRow={onDblclickRow}
+            />
           ))}
         </div>
         <div class="hd-table-row-fixed-right" style={rightFixStyle}>
           {rightColumns.map((column, index) => (
-            <tableCell column={column} record={row} key={index} />
+            <tableCell column={column} record={row} key={index} onDblclickRow={onDblclickRow} />
           ))}
         </div>
       </div>

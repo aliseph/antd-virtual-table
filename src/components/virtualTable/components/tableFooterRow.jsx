@@ -1,7 +1,7 @@
 import tableFooterCell from './tableFooterCell'
 
 export default {
-  name: 'tableFooterRow',
+  name: 'TableFooterRow',
   props: {
     rows: {
       type: Array,
@@ -38,6 +38,10 @@ export default {
     checkedObservable: {
       type: Object,
       required: true
+    },
+    summaryRow: {
+      type: Object,
+      default: () => {}
     }
   },
   data() {
@@ -56,7 +60,8 @@ export default {
       rightColumns,
       offsetX,
       rightFixStyle,
-      checkedObservable
+      checkedObservable,
+      summaryRow
     } = this
     const rowProps = {
       class: {
@@ -88,17 +93,32 @@ export default {
             <span class="hd-table-index-no">共{rows.length}条</span>
           </div>
           {leftColumns.map((column, index) => (
-            <tableFooterCell column={column} rows={rows} checkedObservable={checkedObservable} />
+            <tableFooterCell
+              column={column}
+              rows={rows}
+              summary={summaryRow ? summaryRow[column.dataIndex] : null}
+              checkedObservable={checkedObservable}
+            />
           ))}
         </div>
         <div {...centerProps}>
           {centerColumns.map((column, index) => (
-            <tableFooterCell column={column} rows={rows} checkedObservable={checkedObservable} />
+            <tableFooterCell
+              column={column}
+              rows={rows}
+              summary={summaryRow ? summaryRow[column.dataIndex] : null}
+              checkedObservable={checkedObservable}
+            />
           ))}
         </div>
         <div class="hd-table-row-fixed-right" style={rightFixStyle}>
           {rightColumns.map((column, index) => (
-            <tableFooterCell column={column} rows={rows} checkedObservable={checkedObservable} />
+            <tableFooterCell
+              column={column}
+              rows={rows}
+              summary={summaryRow ? summaryRow[column.dataIndex] : null}
+              checkedObservable={checkedObservable}
+            />
           ))}
         </div>
       </div>

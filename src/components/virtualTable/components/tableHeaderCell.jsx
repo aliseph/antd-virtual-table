@@ -1,5 +1,5 @@
 export default {
-  name: 'tableHeaderCell',
+  name: 'TableHeaderCell',
   props: {
     column: {
       type: Object,
@@ -32,6 +32,13 @@ export default {
         'text-align': column.align ? column.align : column.colSpan > 1 ? 'center' : 'left'
       }
     }
+
+    const titleProps = {
+      style: {
+        'font-weight': column.bold ? 'bold' : 'normal'
+      }
+    }
+
     const actionProps = {
       class: {
         'hd-table-cell-action': true,
@@ -73,7 +80,7 @@ export default {
     }
     return (
       <div {...props}>
-        <span>{column.title}</span>
+        <span {...titleProps}>{column.title}</span>
         {column.rowSpan > 0 && (!column.children || !column.children.length) && (
           <a-dropdown
             trigger={['click']}

@@ -3,18 +3,19 @@
 @hd-table-cell-index-width: 50px;
 @hd-table-cell-portal-width: 40px;
 @hd-table-cell-total-width: 90px;
+@hd-table-border-color:#e8e8e8;
 
 .@{hd-table-prefix}-container {
   display: flex;
   flex: 1 1 auto;
   overflow: hidden;
   height: 0;
-  border: 1px solid #bfbfbf;
+  border: 1px solid @hd-table-border-color;
   border-radius: 4px;
   position: relative;
   height: 100%;
   width: 100%;
-  background-color: #f5f7fa;
+  background-color: #fff;
   contain: strict;
 
   .resize-observer {
@@ -79,11 +80,10 @@
     flex-direction: column;
     overflow: hidden;
     border-bottom: none;
-    &-header,
-    &-body,
-    &-footer {
-      background-color: #f5f7fa;
-    }
+    // &-header,
+    // &-footer {
+    //   background-color: #f5f7fa;
+    // }
 
     &-header,
     &-footer {
@@ -111,7 +111,7 @@
     }
 
     &-header-empty {
-      border-bottom: 1px solid #bfbfbf;
+      border-bottom: 1px solid @hd-table-border-color;
       .@{hd-table-prefix}-index,
       .@{hd-table-prefix}-portal {
         border-bottom: none !important;
@@ -119,7 +119,7 @@
     }
 
     &-footer-empty {
-      border-top: 1px solid #bfbfbf;
+      border-top: 1px solid @hd-table-border-color;
       .@{hd-table-prefix}-total,
       .@{hd-table-prefix}-cell {
         border-top: none !important;
@@ -140,7 +140,7 @@
     &-footer {
       .@{hd-table-prefix}-row:first-child .@{hd-table-prefix}-cell,
       .@{hd-table-prefix}-row:first-child .@{hd-table-prefix}-total {
-        border-top: 1px solid #bfbfbf;
+        border-top: 1px solid @hd-table-border-color;
       }
 
       .@{hd-table-prefix}-row:last-child .@{hd-table-prefix}-cell,
@@ -151,7 +151,7 @@
 
     &-body-container {
       flex: 1;
-      overflow: hidden;
+      overflow: auto;
       position: relative;
 
       .@{hd-table-prefix}-placeholder {
@@ -212,6 +212,7 @@
     }
     .@{hd-table-prefix}-row,
     .@{hd-table-prefix}-top-placeholder,
+    .@{hd-table-prefix}-bottom-placeholder,
     .@{hd-table-prefix}-row-left,
     .@{hd-table-prefix}-row-right {
       height: 0;
@@ -247,7 +248,7 @@
       }
       .@{hd-table-prefix}-row-fixed-right {
         right: 0;
-        border-left: 1px solid #bfbfbf;
+        border-left: 1px solid @hd-table-border-color;
         box-shadow: -6px 0 6px -4px rgba(0, 0, 0, 0.15);
         .@{hd-table-prefix}-cell:last-child {
           border-right: none;
@@ -281,8 +282,8 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      border-bottom: 1px solid #bfbfbf;
-      border-right: 1px solid #bfbfbf;
+      border-bottom: 1px solid @hd-table-border-color;
+      border-right: 1px solid @hd-table-border-color;
       padding: 0 8px;
     }
 
@@ -310,6 +311,14 @@
     }
 
     .@{hd-table-prefix}-cell {
+      .right {
+        text-align: right;
+      }
+
+      .left {
+        text-align: left;
+      }
+      
       &-text {
         padding-right: 30px;
       }
@@ -375,7 +384,6 @@
     z-index: 10;
 
     &-content {
-      overflow: hidden;
       color: #fff;
       text-align: center;
       background-color: rgba(0, 0, 0, 0.45);

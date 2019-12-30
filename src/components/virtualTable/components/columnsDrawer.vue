@@ -17,6 +17,7 @@
       :dataSource="currentDatas"
       :scroll="scroll"
       rowKey="dataIndex"
+      :pagination="false"
       bordered
     >
       <template slot="name" slot-scope="text">
@@ -29,7 +30,7 @@
           :max="500"
           v-if="!record.children||!record.children.length"
         />
-        <span v-else>{{record.width}}</span>
+        <span v-else>{{ record.width }}</span>
       </template>
       <template slot="show" slot-scope="text,record">
         <a-icon
@@ -79,10 +80,10 @@
     </a-table>
     <div class="ant-drawer-body-footer">
       <a-button type="default" @click="() => $emit('input', false)">
-        <span>Cancel</span>
+        <span>取消</span>
       </a-button>
       <a-button type="primary" @click="onSubmit">
-        <span>Submit</span>
+        <span>确认</span>
       </a-button>
     </div>
   </a-drawer>
@@ -91,7 +92,7 @@
 import _ from 'lodash'
 
 export default {
-  name: 'columnsDrawer',
+  name: 'ColumnsDrawer',
   props: {
     value: {
       type: Boolean,
@@ -133,7 +134,7 @@ export default {
           dataIndex: 'fixed',
           align: 'center',
           scopedSlots: { customRender: 'fixed' },
-          width: 120
+          width: 100
         },
         {
           title: '内容的对齐方式',
@@ -177,7 +178,7 @@ export default {
   methods: {
     getRealRecord(record) {
       const realRecord = this.currentDataList.find(data => data.dataIndex == record.dataIndex)
-      return realRecord ? realRecord : {}
+      return realRecord || {}
     },
     onInputShow(record) {
       const realRecord = this.getRealRecord(record)
@@ -190,7 +191,7 @@ export default {
         cloneColumns[index - 1] = this.currentDatas[index]
         cloneColumns[index] = this.currentDatas[index - 1]
         this.currentDatas = cloneColumns
-        this.currentDataList = this.columnManager.columnList(this.currentDatas, 'dataIndex', 'parentDateIndex')
+        this.currentDataList = this.columnManager.columnList(this.currentDatas, 'dataIndex', 'parentDataIndex')
       }
     },
     onDownColumn(index) {
@@ -200,7 +201,7 @@ export default {
         cloneColumns[index + 1] = this.currentDatas[index]
         cloneColumns[index] = this.currentDatas[index + 1]
         this.currentDatas = cloneColumns
-        this.currentDataList = this.columnManager.columnList(this.currentDatas, 'dataIndex', 'parentDateIndex')
+        this.currentDataList = this.columnManager.columnList(this.currentDatas, 'dataIndex', 'parentDataIndex')
       }
     },
     onSubmit() {
