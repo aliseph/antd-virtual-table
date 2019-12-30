@@ -315,7 +315,7 @@ export default {
     updateTable(offset) {
       console.log(offset)
       this.showRows = this.scrollManager.showRows
-      this.offsetTop = Math.max(this.scrollManager.offsetTop - offset.y, 0)
+      this.offsetTop = this.scrollManager.offsetTop
       // this.$refs.topPlaceholder &&
       //   (this.$refs.topPlaceholder.style.height =
       //     this.scrollManager.offsetTop + 'px')
@@ -482,7 +482,7 @@ export default {
           onChecked={checked => onChecked(checked, row, index)}
           onShowDetail={onShowDetail}
           onDblclickRow={onDblclickRow}
-          style={{ transform: `translate3d(0,${-1 * this.offsetTop}px,0)` }}
+          style={{ transform: `translate3d(0,${this.offsetTop}px,0)` }}
         />
       ))
     },
