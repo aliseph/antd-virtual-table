@@ -48,7 +48,6 @@ export default {
   render() {
     const {
       row,
-      scrollX,
       offsetX,
       offsetLeft,
       leftColumns,
@@ -60,9 +59,6 @@ export default {
         'hd-table-row': true,
         'hd-table-row-checked': row._checked,
       },
-      // style: {
-      //   width: scrollX + 'px'
-      // },
       on: {
         click: event => {
           event.stopPropagation()
@@ -116,7 +112,7 @@ export default {
             <tableCell
               column={column}
               record={row}
-              key={column.dateIndex + '_' + index}
+              key={index}
               onDblclickRow={onDblclickRow}
             />
           ))}

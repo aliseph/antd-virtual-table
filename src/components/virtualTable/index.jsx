@@ -78,28 +78,17 @@ export default {
     }
   },
   watch: {
-    // options () {
-    //   return {
-    //     root: this.loaderViewport,
-    //     rootMargin: `0px 0px ${this.loaderDistance}px 0px`
-    //   }
-    // },
-    // observer () {
-    //   return new IntersectionObserver(([{ isIntersecting }]) => {
-    //     isIntersecting && !this.loaderDisable && this.loaderMethod()
-    //   }, this.options)
-    // },
     columns() {
       this.columnManager = this.columnManager.reset(
         this.updateColumns(this.columns)
       )
       this.filterColumns = []
-      this.loading && this.initObservable.next()
+      this.initObservable.next()
     },
     rows() {
       this.lastCheckedIndex = -1
       this.filterColumns = []
-      this.loading && this.initObservable.next()
+      this.initObservable.next()
     },
     loading() {
       if (this.loading) {
@@ -129,7 +118,6 @@ export default {
       this.isScrollY = this.scrollManager.isScrollY
       this.containerX = this.scrollManager.containerX
       this.containerY = this.scrollManager.containerY
-      this.offsetX = this.scrollManager.offsetX
       this.leftColumnsWidth = this.scrollManager.leftColumnsWidth
       this.rightColumnsWidth = this.scrollManager.rightColumnsWidth
 
@@ -139,7 +127,6 @@ export default {
         if (this.isScrollY) {
           this.scrollBarSize =
             this.containerX - this.$refs.bodyScroll.clientWidth
-          console.dir(this.scrollBarSize)
         } else {
           this.scrollBarSize = 0
         }
@@ -176,29 +163,35 @@ export default {
           })
         )
         .subscribe(offset => {
-          let update = false
-          if (this.offsetX !== offset.x) {
-            this.offsetX = offset.x
-            this.$emit('on-scroll-x', this.offsetX)
-            const lastClusterColumnNum = this.scrollManager.lastClusterColumnNum
-            update =
-              update ||
-              lastClusterColumnNum !=
-                this.scrollManager.onScrollLeft(this.offsetX)
-          }
-          if (this.offsetY !== offset.y) {
-            this.offsetY = offset.y
-            this.$emit('on-scroll-y', this.offsetY)
-            const lastClusterRowNum = this.scrollManager.lastClusterRowNum
-            update =
-              update ||
-              lastClusterRowNum != this.scrollManager.onScrollTop(this.offsetY)
-          }
-
-          if (update) {
-            this.updateObservable.next()
-          }
+          this.$emit('scroll', offset)
+          this.onScroll(offset)
         })
+    },
+    onScroll(offset) {
+      let update = false
+      if (this.offsetX !== offset.x) {
+        this.offsetX = offset.x
+        const lastClusterColumnNum = this.scrollManager.lastClusterColumnNum
+        update =
+          update ||
+          lastClusterColumnNum != this.scrollManager.onScrollLeft(this.offsetX)
+      }
+      if (this.offsetY !== offset.y) {
+        this.offsetY = offset.y
+        const lastClusterRowNum = this.scrollManager.lastClusterRowNum
+        update =
+          update ||
+          lastClusterRowNum != this.scrollManager.onScrollTop(this.offsetY)
+      }
+
+      if (update) {
+        this.updateObservable.next()
+      }
+    },
+    syncScroll(offsetX, offsetY) {
+      this.$refs.scrollContainer.scrollLeft = offsetX
+      this.$refs.scrollContainer.scrollTop = offsetY
+      this.onScroll({ x: offsetX, y: offsetY })
     },
     updateTable() {
       this.showColumns = this.scrollManager.showColumns
@@ -563,14 +556,8 @@ export default {
       loading,
       scrollX,
       scrollY,
-      containerX,
-      containerY,
-      isScrollX,
-      isScrollY,
-      offsetY,
       offsetX,
       showRows,
-      rightColumnsWidth,
       isReachRight,
       currentColumns,
       columnManager,
@@ -627,7 +614,7 @@ export default {
               class="hd-table-body"
               style={{
                 width: '100%',
-                height: scrollY ? scrollY + 'px' : '100%',
+                height: scrollY ? scrollY + 'px' : 'auto',
               }}
               ref="bodyScroll"
             >
