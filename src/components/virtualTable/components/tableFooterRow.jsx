@@ -5,48 +5,48 @@ export default {
   props: {
     rows: {
       type: Array,
-      default: () => []
+      default: () => [],
     },
     leftColumns: {
       type: Array,
-      default: () => []
+      default: () => [],
     },
     centerColumns: {
       type: Array,
-      default: () => []
+      default: () => [],
     },
     rightColumns: {
       type: Array,
-      default: () => []
+      default: () => [],
     },
     scrollX: {
       type: Number,
-      default: 0
+      default: 0,
     },
     offsetLeft: {
       type: Number,
-      default: 0
+      default: 0,
     },
     offsetX: {
       type: Number,
-      default: 0
+      default: 0,
     },
-    rightFixStyle: {
-      type: Object,
-      default: () => {}
+    scrollBarSize: {
+      type: Number,
+      default: 0,
     },
     checkedObservable: {
       type: Object,
-      required: true
+      required: true,
     },
     summaryRow: {
       type: Object,
-      default: () => {}
-    }
+      default: () => {},
+    },
   },
   data() {
     return {
-      subscription: null
+      subscription: null,
     }
   },
   methods: {},
@@ -59,31 +59,31 @@ export default {
       centerColumns,
       rightColumns,
       offsetX,
-      rightFixStyle,
+      scrollBarSize,
       checkedObservable,
-      summaryRow
+      summaryRow,
     } = this
     const rowProps = {
       class: {
-        'hd-table-row': true
+        'hd-table-row': true,
       },
       style: {
-        width: scrollX + 'px'
-      }
+        // width: scrollX + 'px'
+      },
     }
     const leftPlaceholderProps = {
       class: {
-        'hd-table-left-placeholder': true
+        'hd-table-left-placeholder': true,
       },
-      style: { width: offsetLeft + 'px' }
+      style: { width: offsetLeft + 'px' },
     }
     const centerProps = {
       class: {
-        'hd-table-row-center': true
+        'hd-table-row-center': true,
       },
       style: {
-        transform: `translate3d(${-1 * offsetX}px,0,0)`
-      }
+        transform: `translate3d(${-1 * offsetX}px,0,0)`,
+      },
     }
     return (
       <div {...rowProps}>
@@ -111,10 +111,14 @@ export default {
             />
           ))}
         </div>
-        <div class="hd-table-row-fixed-right" style={rightFixStyle}>
+        <div class="hd-table-row-fixed-right">
           {rightColumns.map((column, index) => (
             <tableFooterCell
-              column={column}
+              column={
+                rightColumns.length - 1 === index
+                  ? { ...column, width: column.width + scrollBarSize }
+                  : column
+              }
               rows={rows}
               summary={summaryRow ? summaryRow[column.dataIndex] : null}
               checkedObservable={checkedObservable}
@@ -123,5 +127,5 @@ export default {
         </div>
       </div>
     )
-  }
+  },
 }

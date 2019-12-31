@@ -5,7 +5,6 @@ import ScrollManager from './utils/scrollManager'
 import tableRow from './components/tableRow.jsx'
 import tableHeaderRow from './components/tableHeaderRow.jsx'
 import tableFooterRow from './components/tableFooterRow.jsx'
-import scrollbar from './components/scrollbar'
 import filterBar from './components/filterBar'
 import columnsDrawer from './components/columnsDrawer'
 import './index.less'
@@ -39,41 +38,43 @@ export default {
   },
   data() {
     return {
-      columnManager: new ColumnManager(this.columns),
-      scrollManager: new ScrollManager(),
-      destroy$: new Subject(),
-      updateObservable: new Subject(),
-      updateSubscription: null,
-      wheelEvent: null,
-      scrollEvent: null,
-      offsetX: 0,
-      offsetLeft: 0,
-      offsetY: 0,
-      offsetTop: 0,
-      showDrawer: false,
-      showRows: [],
-      currentRows: [],
-      currentColumns: [],
-      showColumns: [],
-      headerRows: [],
-      scrollX: 0,
-      scrollY: 0,
-      containerX: 0,
-      containerY: 0,
-      isScrollX: false,
-      isScrollY: false,
-      leftColumns: [],
-      rightColumns: [],
-      leftColumnsWidth: 0,
-      rightFixStyle: {},
-      tableClass: {},
-      bodyStyle: {},
       lastCheckedIndex: -1,
       checkedObservable: new Subject(),
       showColumnsDrawer: false,
       isAnyColumnsFilter: false,
       filterColumns: [],
       filterVisible: false,
+      columnManager: new ColumnManager(this.columns),
+      scrollManager: new ScrollManager(),
+      destroy$: new Subject(),
+      initObservable: new Subject(),
+      initSubscription: null,
+      updateObservable: new Subject(),
+      updateSubscription: null,
+      scrollEvent: null,
+      showDrawer: false,
+      currentRows: [],
+      currentColumns: [],
+      headerRows: [], // 表头数组
+      scrollX: 0, // 滚动区域的宽度
+      scrollY: 0, // 滚动区域的高度
+      containerX: 0, // 滚动容器的宽度
+      containerY: 0, // 滚动容器的高度
+      isScrollX: false,
+      isScrollY: false,
+      leftColumns: [],
+      rightColumns: [],
+      leftColumnsWidth: 0,
+      rightColumnsWidth: 0,
+      scrollBarSize: 0,
+      // 以下为滚动中变量
+      showRows: [], // 可见行
+      showColumns: [], // 可见列
+      offsetX: 0, // 滚动条横向滚动量
+      offsetLeft: 0, // 滚动后可见区域横向偏移量
+      offsetY: 0, // 滚动条竖向滚动量
+      offsetTop: 0, // 滚动后可见区域竖向偏移量
+      isReachRight: false,
     }
   },
   watch: {
@@ -93,16 +94,16 @@ export default {
         this.updateColumns(this.columns)
       )
       this.filterColumns = []
-      this.initOptions()
+      this.loading && this.initObservable.next()
     },
     rows() {
       this.lastCheckedIndex = -1
       this.filterColumns = []
-      this.initOptions()
+      this.loading && this.initObservable.next()
     },
     loading() {
       if (this.loading) {
-      } else {
+        this.initObservable.next()
       }
     },
   },
@@ -117,8 +118,6 @@ export default {
       this.showColumns = this.scrollManager.showColumns
       this.showRows = this.scrollManager.showRows
       this.offsetLeft = this.scrollManager.offsetLeft
-      this.tableClass = this.scrollManager.tableClass()
-      this.bodyStyle = this.scrollManager.bodyStyle()
       this.headerRows = this.columnManager.headerColumnsRows()
       this.currentColumns = this.columnManager.columns
       this.leftColumns = this.columnManager.leftLeafColumns()
@@ -131,13 +130,113 @@ export default {
       this.containerX = this.scrollManager.containerX
       this.containerY = this.scrollManager.containerY
       this.offsetX = this.scrollManager.offsetX
-      this.rightFixStyle = this.scrollManager.rightFixStyle
       this.leftColumnsWidth = this.scrollManager.leftColumnsWidth
+      this.rightColumnsWidth = this.scrollManager.rightColumnsWidth
 
       this.isAnyColumnsFilter = this.columnManager.isAnyColumnsFilter()
       this.$nextTick(() => {
         this.checkedObservable.next()
+        if (this.isScrollY) {
+          this.scrollBarSize =
+            this.containerX - this.$refs.bodyScroll.clientWidth
+          console.dir(this.scrollBarSize)
+        } else {
+          this.scrollBarSize = 0
+        }
       })
+    },
+    bindScroll() {
+      this.scrollEvent = fromEvent(this.$refs.scrollContainer, 'scroll')
+        .pipe(
+          takeUntil(this.destroy$),
+          tap(event => {
+            if (
+              event.target.scrollLeft + event.target.clientWidth ==
+              event.target.scrollWidth
+            ) {
+              this.isReachRight = true
+              this.$emit('reach-right')
+            } else {
+              this.isReachRight = false
+            }
+            if (
+              event.target.scrollTop + event.target.clientHeight ==
+              event.target.scrollHeight
+            ) {
+              this.$emit('reach-bottom')
+            }
+          }),
+          sampleTime(0, animationFrameScheduler),
+          map(event => {
+            const { scrollTop, scrollLeft } = event.target
+            return {
+              x: scrollLeft,
+              y: scrollTop,
+            }
+          })
+        )
+        .subscribe(offset => {
+          let update = false
+          if (this.offsetX !== offset.x) {
+            this.offsetX = offset.x
+            this.$emit('on-scroll-x', this.offsetX)
+            const lastClusterColumnNum = this.scrollManager.lastClusterColumnNum
+            update =
+              update ||
+              lastClusterColumnNum !=
+                this.scrollManager.onScrollLeft(this.offsetX)
+          }
+          if (this.offsetY !== offset.y) {
+            this.offsetY = offset.y
+            this.$emit('on-scroll-y', this.offsetY)
+            const lastClusterRowNum = this.scrollManager.lastClusterRowNum
+            update =
+              update ||
+              lastClusterRowNum != this.scrollManager.onScrollTop(this.offsetY)
+          }
+
+          if (update) {
+            this.updateObservable.next()
+          }
+        })
+    },
+    updateTable() {
+      this.showColumns = this.scrollManager.showColumns
+      this.offsetLeft = this.scrollManager.offsetLeft
+
+      this.showRows = this.scrollManager.showRows
+      this.offsetTop = this.scrollManager.offsetTop
+    },
+    updateColumns(cols = []) {
+      const columns = []
+      const { $slots, $scopedSlots } = this
+      cols.forEach(col => {
+        const { slots = {}, scopedSlots = {}, ...resetProps } = col
+        const column = {
+          ...resetProps,
+        }
+        Object.keys(slots).forEach(key => {
+          const name = slots[key]
+          if (column[key] === undefined && $slots[name]) {
+            column[key] =
+              $slots[name].length === 1 ? $slots[name][0] : $slots[name]
+          }
+        })
+        Object.keys(scopedSlots).forEach(key => {
+          const name = scopedSlots[key]
+          if (column[key] === undefined && $scopedSlots[name]) {
+            column[key] = $scopedSlots[name]
+          }
+        })
+        // if (slotScopeName && $scopedSlots[slotScopeName]) {
+        //   column.customRender = column.customRender || $scopedSlots[slotScopeName]
+        // }
+        if (col.children) {
+          column.children = this.updateColumns(column.children)
+        }
+        columns.push(column)
+      })
+      return columns
     },
     filterRows() {
       let currentRows = [...this.rows]
@@ -216,115 +315,6 @@ export default {
       })
       return currentRows
     },
-    bindWheel() {
-      if (!this.wheelEvent && this.$refs.container) {
-        this.wheelEvent = fromEvent(this.$refs.container, 'wheel')
-          .pipe(
-            takeUntil(this.destroy$),
-            tap(event => event.preventDefault()),
-            map(event => {
-              const { deltaX, deltaY } = event
-              return {
-                x: deltaX > 0 ? 100 : deltaX < 0 ? -100 : 0,
-                y: deltaY > 0 ? 100 : deltaY < 0 ? -100 : 0,
-              }
-            }),
-            sampleTime(0, animationFrameScheduler)
-          )
-          .subscribe(offset => {
-            this.offsetX += offset.x
-            this.offsetY += offset.y
-          })
-      }
-    },
-    bindScroll() {
-      this.scrollEvent = fromEvent(this.$refs.scrollContainer, 'scroll')
-        .pipe(
-          takeUntil(this.destroy$),
-          tap(event => event.preventDefault()),
-          sampleTime(0, animationFrameScheduler),
-          map(event => {
-            const { scrollTop, scrollLeft } = event.target
-            return {
-              x: scrollLeft,
-              y: scrollTop,
-            }
-          })
-        )
-        .subscribe(offset => {
-          if (this.offsetX !== offset.x) {
-            this.offsetX = offset.x
-            this.onScrollX(this.offsetX)
-          }
-          if (this.offsetY !== offset.y) {
-            this.offsetY = offset.y
-            this.onScrollY(this.offsetY)
-          }
-        })
-    },
-    updateColumns(cols = []) {
-      const columns = []
-      const { $slots, $scopedSlots } = this
-      cols.forEach(col => {
-        const { slots = {}, scopedSlots = {}, ...resetProps } = col
-        const column = {
-          ...resetProps,
-        }
-        Object.keys(slots).forEach(key => {
-          const name = slots[key]
-          if (column[key] === undefined && $slots[name]) {
-            column[key] =
-              $slots[name].length === 1 ? $slots[name][0] : $slots[name]
-          }
-        })
-        Object.keys(scopedSlots).forEach(key => {
-          const name = scopedSlots[key]
-          if (column[key] === undefined && $scopedSlots[name]) {
-            column[key] = $scopedSlots[name]
-          }
-        })
-        // if (slotScopeName && $scopedSlots[slotScopeName]) {
-        //   column.customRender = column.customRender || $scopedSlots[slotScopeName]
-        // }
-        if (col.children) {
-          column.children = this.updateColumns(column.children)
-        }
-        columns.push(column)
-      })
-      return columns
-    },
-    onScrollX(offset) {
-      this.$emit('on-scroll-x', offset)
-      this.scrollManager.onScrollLeft(offset)
-      this.tableClass = this.scrollManager.tableClass()
-
-      this.$nextTick(() => {
-        this.showColumns = this.scrollManager.showColumns
-        this.offsetX = offset
-        this.offsetLeft = this.scrollManager.offsetLeft
-      })
-    },
-    onScrollY(offset) {
-      this.$emit('on-scroll-y', offset)
-      const lastClusterRowNum = this.scrollManager.lastClusterRowNum
-
-      if (lastClusterRowNum != this.scrollManager.onScrollTop(offset)) {
-        this.updateObservable.next({ y: offset })
-      }
-    },
-    updateTable(offset) {
-      console.log(offset)
-      this.showRows = this.scrollManager.showRows
-      this.offsetTop = this.scrollManager.offsetTop
-      // this.$refs.topPlaceholder &&
-      //   (this.$refs.topPlaceholder.style.height =
-      //     this.scrollManager.offsetTop + 'px')
-
-      // this.$refs.bottomPlaceholder &&
-      //   (this.$refs.bottomPlaceholder.style.height =
-      //     this.scrollManager.offsetBottom + 'px')
-      this.offsetY = offset.y
-    },
     renderHeader() {
       const {
         headerRows,
@@ -332,7 +322,7 @@ export default {
         scrollX,
         offsetX,
         leftColumnsWidth,
-        rightFixStyle,
+        scrollBarSize,
         multiple,
       } = this
       const headerProps = {
@@ -406,7 +396,7 @@ export default {
               scrollX={scrollX}
               offsetX={offsetX}
               offsetLeft={leftColumnsWidth}
-              rightFixStyle={rightFixStyle}
+              scrollBarSize={scrollBarSize}
               rowNum={headerRows.length}
               row={row}
               onCheckedAll={onCheckedAll}
@@ -424,7 +414,6 @@ export default {
         scrollX,
         offsetLeft,
         offsetX,
-        rightFixStyle,
         showColumns,
         showRows,
         leftColumns,
@@ -472,7 +461,6 @@ export default {
         <tableRow
           key={index}
           scrollX={scrollX}
-          rightFixStyle={rightFixStyle}
           offsetX={offsetX}
           offsetLeft={offsetLeft}
           row={row}
@@ -482,7 +470,9 @@ export default {
           onChecked={checked => onChecked(checked, row, index)}
           onShowDetail={onShowDetail}
           onDblclickRow={onDblclickRow}
-          style={{ transform: `translate3d(0,${this.offsetTop}px,0)` }}
+          style={{
+            transform: `translate3d(${this.offsetX}px,${this.offsetTop}px,0)`,
+          }}
         />
       ))
     },
@@ -491,7 +481,7 @@ export default {
         scrollX,
         headerRows,
         currentRows,
-        rightFixStyle,
+        scrollBarSize,
         offsetX,
         offsetLeft,
         showColumns,
@@ -511,7 +501,7 @@ export default {
         <div {...footerProps}>
           <tableFooterRow
             scrollX={scrollX}
-            rightFixStyle={rightFixStyle}
+            scrollBarSize={scrollBarSize}
             offsetX={offsetX}
             offsetLeft={offsetLeft}
             rows={currentRows}
@@ -535,8 +525,15 @@ export default {
       this.$refs
     )
 
-    this.initOptions()
     this.bindScroll()
+
+    this.initSubscription = this.initObservable
+      .pipe(takeUntil(this.destroy$), sampleTime(0, animationFrameScheduler))
+      .subscribe(() => {
+        this.initOptions()
+      })
+
+    this.initObservable.next()
 
     this.updateSubscription = this.updateObservable
       .pipe(takeUntil(this.destroy$), sampleTime(0, animationFrameScheduler))
@@ -552,13 +549,14 @@ export default {
           this.columnManager,
           this.$refs
         )
-        this.initOptions()
+        this.initObservable.next()
       })
   },
   beforeDestroy() {
     this.destroy$.next()
     this.destroy$.complete()
     this.updateSubscription.unsubscribe()
+    this.initSubscription.unsubscribe()
   },
   render() {
     const {
@@ -569,11 +567,11 @@ export default {
       containerY,
       isScrollX,
       isScrollY,
-      tableClass,
       offsetY,
       offsetX,
-      bodyStyle,
       showRows,
+      rightColumnsWidth,
+      isReachRight,
       currentColumns,
       columnManager,
       isAnyColumnsFilter,
@@ -597,8 +595,14 @@ export default {
     }
 
     return (
-      <div class="hd-table-container" ref="container">
-        <div class={tableClass}>
+      <div class="hd-table-container" ref="container" key="container">
+        <div
+          class={{
+            'hd-table': true,
+            'hd-table-reach-left': !offsetX,
+            'hd-table-reach-right': isReachRight,
+          }}
+        >
           {!loading && this.renderHeader()}
           <div
             class="hd-table-body-container"
@@ -619,38 +623,24 @@ export default {
               </div>
             )}
 
-            <div class="hd-table-body" style={bodyStyle} ref="bodyScroll">
+            <div
+              class="hd-table-body"
+              style={{
+                width: '100%',
+                height: scrollY ? scrollY + 'px' : '100%',
+              }}
+              ref="bodyScroll"
+            >
               <div
                 class="hd-table-top-placeholder"
                 ref="topPlaceholder"
                 key="topPlaceholder"
+                style={{
+                  width: scrollX + 'px',
+                }}
               />
               {!loading && this.renderBody()}
-              <div
-                class="hd-table-bottom-placeholder"
-                ref="bottomPlaceholder"
-                key="bottomPlaceholder"
-              />
             </div>
-            {false && !!isScrollY && (
-              <scrollbar
-                ref="scrollbarY"
-                scrollSize={scrollY}
-                containerSize={containerY}
-                value={offsetY}
-                onInput={this.onScrollY}
-              />
-            )}
-            {false && !!isScrollX && (
-              <scrollbar
-                ref="scrollbarX"
-                scrollSize={scrollX}
-                containerSize={containerX}
-                horizontal
-                value={offsetX}
-                onInput={this.onScrollX}
-              />
-            )}
           </div>
           {!loading && this.renderFooter()}
         </div>

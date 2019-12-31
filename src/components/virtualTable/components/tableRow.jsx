@@ -5,40 +5,36 @@ export default {
   props: {
     row: {
       type: Object,
-      default: () => {}
+      default: () => {},
     },
     leftColumns: {
       type: Array,
-      default: () => []
+      default: () => [],
     },
     centerColumns: {
       type: Array,
-      default: () => []
+      default: () => [],
     },
     rightColumns: {
       type: Array,
-      default: () => []
+      default: () => [],
     },
     scrollX: {
       type: Number,
-      default: 0
+      default: 0,
     },
     offsetLeft: {
       type: Number,
-      default: 0
+      default: 0,
     },
     offsetX: {
       type: Number,
-      default: 0
-    },
-    rightFixStyle: {
-      type: Object,
-      default: () => {}
+      default: 0,
     },
     valign: {
       type: String,
-      default: 'middle'
-    }
+      default: 'middle',
+    },
   },
   data() {
     return {}
@@ -47,38 +43,40 @@ export default {
     onCheckedChange(event) {
       this.$emit('checked', event.target.checked)
       // this.$emit('changeRow', { ...this.row, _checked: event.target.checked })
-    }
+    },
   },
   render() {
-    const { row, scrollX, offsetX, offsetLeft, leftColumns, centerColumns, rightColumns, rightFixStyle } = this
+    const {
+      row,
+      scrollX,
+      offsetX,
+      offsetLeft,
+      leftColumns,
+      centerColumns,
+      rightColumns,
+    } = this
     const rowProps = {
       class: {
         'hd-table-row': true,
-        'hd-table-row-checked': row._checked
+        'hd-table-row-checked': row._checked,
       },
-      style: {
-        width: scrollX + 'px'
-      },
+      // style: {
+      //   width: scrollX + 'px'
+      // },
       on: {
         click: event => {
           event.stopPropagation()
           this.$emit('checked', !row._checked)
-        }
-      }
-    }
-    const leftPlaceholderProps = {
-      class: {
-        'hd-table-left-placeholder': true
+        },
       },
-      style: { width: offsetLeft + 'px' }
     }
     const centerProps = {
       class: {
-        'hd-table-row-center': true
+        'hd-table-row-center': true,
       },
       style: {
-        transform: `translate3d(${-1 * offsetX}px,0,0)`
-      }
+        transform: `translate3d(${offsetLeft + -1 * offsetX}px,0,0)`,
+      },
     }
 
     const onShowDetail = event => {
@@ -92,17 +90,25 @@ export default {
 
     return (
       <div {...rowProps}>
-        <div {...leftPlaceholderProps} />
         <div class="hd-table-row-fixed-left">
           <div class="hd-table-index" title={row._index + 1}>
             <span class="hd-table-index-no">{row._index + 1}</span>
-            <a-checkbox class="hd-table-index-checkbox" checked={row._checked} onChange={this.onCheckedChange} />
+            <a-checkbox
+              class="hd-table-index-checkbox"
+              checked={row._checked}
+              onChange={this.onCheckedChange}
+            />
           </div>
           <div class="hd-table-portal">
             <a-icon type="layout" onClick={onShowDetail} />
           </div>
           {leftColumns.map((column, index) => (
-            <tableCell column={column} record={row} key={index} onDblclickRow={onDblclickRow} />
+            <tableCell
+              column={column}
+              record={row}
+              key={index}
+              onDblclickRow={onDblclickRow}
+            />
           ))}
         </div>
         <div {...centerProps}>
@@ -115,12 +121,17 @@ export default {
             />
           ))}
         </div>
-        <div class="hd-table-row-fixed-right" style={rightFixStyle}>
+        <div class="hd-table-row-fixed-right">
           {rightColumns.map((column, index) => (
-            <tableCell column={column} record={row} key={index} onDblclickRow={onDblclickRow} />
+            <tableCell
+              column={column}
+              record={row}
+              key={index}
+              onDblclickRow={onDblclickRow}
+            />
           ))}
         </div>
       </div>
     )
-  }
+  },
 }

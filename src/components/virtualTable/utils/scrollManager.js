@@ -53,7 +53,7 @@ export default class scrollManager {
       )
 
     const centerColumns = this.columnManager.leafColumns()
-    // 滚动范围的宽度
+    // 滚动区域的宽度
     this.scrollX =
       centerColumns && centerColumns.length
         ? centerColumns.reduce(
@@ -65,19 +65,15 @@ export default class scrollManager {
 
     this.offsetLeft = this.leftColumnsWidth
 
-    // 滚动范围的高度
+    // 滚动区域的高度
     this.scrollY =
       this.rows && this.rows.length ? this.rows.length * this.rowHeight + 20 : 0
-
-    this.rightFixStyle = {
-      right: this.scrollX - this.containerX + 'px',
-    }
 
     this.keepRows = 20
     this.remainRows = Math.floor(this.keepRows * 0.2)
     this.benchRows = this.keepRows - this.remainRows
-    this.isClusterizeY = this.keepRows < this.rows.length
-    this.visibleZoneHeight = this.remainRows * this.rowHeight
+    this.isClusterizeY = this.keepRows < this.rows.length // 竖向是否需要虚拟化展示
+    this.visibleZoneHeight = this.remainRows * this.rowHeight // 可见区域高度
     this.isScrollY =
       this.rows && this.rows.length && this.scrollY > this.containerY
 
@@ -85,12 +81,11 @@ export default class scrollManager {
       this.columnManager.centerLeafColumns().map(column => column.width)
     )
 
-    this.keepColumns =
-      Math.floor(((this.containerX / minColumnWidth) * 3) / 2) + 8
+    this.keepColumns = 24
     this.remainColumns = Math.floor(this.keepColumns * 0.2)
     this.benchColumns = this.keepColumns - this.remainColumns
     this.isClusterizeX =
-      this.keepColumns < this.columnManager.centerLeafColumns().length
+      this.keepColumns < this.columnManager.centerLeafColumns().length // 横向是否需要虚拟化展示
 
     if (this.isClusterizeX) {
       const arr = []
@@ -161,23 +156,6 @@ export default class scrollManager {
     return this.rows
   }
 
-  bodyStyle() {
-    return {
-      width: this.scrollX ? this.scrollX + 'px' : '100%',
-      height: this.scrollY ? this.scrollY + 'px' : '100%',
-      // pointerEvents: this.isScrolling ? 'none' : '',
-    }
-  }
-
-  tableClass() {
-    return {
-      'hd-table': true,
-      'hd-table-reach-left': !this.offsetX,
-      'hd-table-reach-right':
-        Math.abs(this.scrollX - this.containerX - this.offsetX) < 0.001,
-    }
-  }
-
   onScrollTop(offsetY) {
     this.offsetY = offsetY
     if (
@@ -202,12 +180,12 @@ export default class scrollManager {
     if (!this.isClusterizeY) {
       this.showRows = this.rows
     } else {
-      this.offsetTop = this.lastStartRow * this.rowHeight
-      this.offsetTop = this.offsetTop <= 0 ? 0 : this.offsetTop
+      this.offsetTop = Math.max(this.lastStartRow * this.rowHeight, 0)
 
-      this.offsetBottom =
-        this.scrollY - this.keepRows * this.rowHeight - this.offsetTop
-      this.offsetBottom = this.offsetBottom <= 0 ? 0 : this.offsetBottom
+      this.offsetBottom = Math.max(
+        this.scrollY - this.keepRows * this.rowHeight - this.offsetTop,
+        0
+      )
 
       this.showRows = this.rows.slice(
         this.lastStartRow,
@@ -226,6 +204,7 @@ export default class scrollManager {
       this.updateColumnsByX()
       this.updateZoneByX()
     }
+    return this.lastClusterColumnNum
   }
   getClusterColumnNum(scrollLeft) {
     let temp = scrollLeft
