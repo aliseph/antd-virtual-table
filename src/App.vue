@@ -4,11 +4,13 @@
       <a-radio-button value="0">单表头</a-radio-button>
       <a-radio-button value="1">多表头</a-radio-button>
     </a-radio-group>
-    <span>&nbsp;&nbsp;列数：
-      <a-input-number :min="1" :max="10" v-model="columnLength" @change="onChange"/>
+    <span>
+      &nbsp;&nbsp;列数：
+      <a-input-number :min="1" :max="10" v-model="columnLength" @change="onChange" />
     </span>
-    <span v-if="multiHeaders==0">&nbsp;&nbsp;行数：
-      <a-input-number :min="1" :max="10" v-model="rowLength" @change="onChange"/>
+    <span v-if="multiHeaders==0">
+      &nbsp;&nbsp;行数：
+      <a-input-number :min="1" :max="10" v-model="rowLength" @change="onChange" />
     </span>
     &nbsp;&nbsp;
     <a-button type="primary" @click="onChange">重新生成数据</a-button>&nbsp;&nbsp;
@@ -41,125 +43,197 @@ const data = [];
 for (let i = 0; i < 100; i++) {
   data.push({
     key: i,
-    name: 'John Brown',
+    name: "John Brown",
     age: i + 1,
-    street: 'Lake Park',
-    building: 'C',
+    street: "Lake Park",
+    building: "C",
     number: 2035,
-    companyAddress: 'Lake Street 42',
-    companyName: 'SoftLake Co',
-    gender: 'M',
+    companyAddress: "Lake Street 42",
+    companyName: "SoftLake Co",
+    gender: "M"
   });
 }
 
 export default {
   name: "app",
   data: () => ({
-    multiHeaders: '0',
+    multiHeaders: "0",
     columns: [],
     loading: false,
     rows: [],
     multiColumns: [
       {
-        title: 'Name',
-        dataIndex: 'name',
-        key: 'name',
+        title: "Name",
+        dataIndex: "name",
+        key: "name",
         width: 100,
-        fixed: 'left',
+        fixed: "left",
         show: true,
-        filters: [{
-          text: 'Joe',
-          value: 'Joe',
-        }, {
-          text: 'John',
-          value: 'John',
-        }],
-        onFilter: (value, record) => record.name.indexOf(value) === 0,
+        filters: [
+          {
+            text: "Joe",
+            value: "Joe"
+          },
+          {
+            text: "John",
+            value: "John"
+          }
+        ],
+        onFilter: (value, record) => record.name.indexOf(value) === 0
       },
       {
-        title: 'Other',
-        dataIndex: 'other',
+        title: "Other",
+        dataIndex: "other",
         show: true,
         width: 400,
         children: [
           {
-            title: 'Age',
-            dataIndex: 'age',
-            key: 'age',
+            title: "Age",
+            dataIndex: "age",
+            key: "age",
             width: 100,
             sorter: (a, b) => a.age - b.age,
-            show: true,
+            show: true
           },
           {
-            title: 'Address',
-            dataIndex: 'address',
+            title: "Address",
+            dataIndex: "address",
             show: true,
             width: 300,
             children: [
               {
-                title: 'Street',
-                dataIndex: 'street',
-                key: 'street',
+                title: "Street",
+                dataIndex: "street",
+                key: "street",
                 width: 100,
-                show: true,
+                show: true
               },
               {
-                title: 'Block',
-                dataIndex: 'block',
+                title: "Block",
+                dataIndex: "block",
                 show: true,
                 width: 200,
                 children: [
                   {
-                    title: 'Building',
-                    dataIndex: 'building',
-                    key: 'building',
+                    title: "Building",
+                    dataIndex: "building",
+                    key: "building",
                     width: 100,
-                    show: true,
+                    show: true
                   },
                   {
-                    title: 'Door No.',
-                    dataIndex: 'number',
-                    key: 'number',
+                    title: "Door No.",
+                    dataIndex: "number",
+                    key: "number",
                     width: 100,
-                    show: true,
+                    show: true
                   }
-                ],
+                ]
               }
-            ],
+            ]
           }
-        ],
+        ]
       },
       {
-        title: 'Company',
-        dataIndex: 'company',
+        title: "Company",
+        dataIndex: "company",
         show: true,
-        width: 200,
+        width: 400,
         children: [
           {
-            title: 'Company Address',
-            dataIndex: 'companyAddress',
-            key: 'companyAddress',
-            align: 'center',
+            title: "Company Address",
+            dataIndex: "companyAddress",
+            key: "companyAddress",
+            align: "center",
             show: true,
-            width: 100,
+            width: 200
           },
           {
-            title: 'Company Name',
-            dataIndex: 'companyName',
-            key: 'companyName',
+            title: "Company Name",
+            dataIndex: "companyName",
+            key: "companyName",
             show: true,
-            width: 100,
+            width: 200
           }
-        ],
+        ]
       },
       {
-        title: 'Gender',
-        dataIndex: 'gender',
-        key: 'gender',
-        width: 80,
-        scopedSlots: { customRender: 'gender' },
+        title: "Company",
+        dataIndex: "company",
         show: true,
+        width: 400,
+        children: [
+          {
+            title: "Company Address",
+            dataIndex: "companyAddress",
+            key: "companyAddress",
+            align: "center",
+            show: true,
+            width: 200
+          },
+          {
+            title: "Company Name",
+            dataIndex: "companyName",
+            key: "companyName",
+            show: true,
+            width: 200
+          }
+        ]
       },
+      {
+        title: "Company",
+        dataIndex: "company",
+        show: true,
+        width: 400,
+        children: [
+          {
+            title: "Company Address",
+            dataIndex: "companyAddress",
+            key: "companyAddress",
+            align: "center",
+            show: true,
+            width: 200
+          },
+          {
+            title: "Company Name",
+            dataIndex: "companyName",
+            key: "companyName",
+            show: true,
+            width: 200
+          }
+        ]
+      },
+      {
+        title: "Company",
+        dataIndex: "company",
+        show: true,
+        width: 400,
+        children: [
+          {
+            title: "Company Address",
+            dataIndex: "companyAddress",
+            key: "companyAddress",
+            align: "center",
+            show: true,
+            width: 200
+          },
+          {
+            title: "Company Name",
+            dataIndex: "companyName",
+            key: "companyName",
+            show: true,
+            width: 200
+          }
+        ]
+      },
+      {
+        title: "Gender",
+        dataIndex: "gender",
+        key: "gender",
+        width: 400,
+        scopedSlots: { customRender: "gender" },
+        show: true
+      }
     ],
     columnLength: 100,
     rowLength: 1000
@@ -172,88 +246,94 @@ export default {
   },
   methods: {
     onChangeMulti() {
-      this.loading = true
-      this.rows = []
-      this.columns = []
-      this.onChange()
+      this.loading = true;
+      this.rows = [];
+      this.columns = [];
+      this.onChange();
     },
     onChange() {
+      this.loading = true;
       if (this.multiHeaders == 0) {
-        this.genData()
+        this.genData();
       } else {
-        this.genMultiData()
+        this.genMultiData();
       }
     },
     genMultiData() {
-      this.columns = this.multiColumns
+      this.columns = this.multiColumns;
       const rows = [];
       for (let i = 0; i < this.rowLength; i++) {
         rows.push({
           key: i,
-          name: 'John Brown',
+          name: "John Brown",
           age: i + 1,
-          street: 'Lake Park',
-          building: 'C',
+          street: "Lake Park",
+          building: "C",
           number: 2035,
-          companyAddress: 'Lake Street 42',
-          companyName: 'SoftLake Co',
-          gender: 'M',
+          companyAddress: "Lake Street 42",
+          companyName: "SoftLake Co",
+          gender: "M"
         });
       }
-      this.rows = rows
-      this.loading = false
+      this.rows = rows;
+      setTimeout(() => {
+        this.loading = false;
+      }, 600);
     },
     genData() {
       const columns = [
         {
-          title: 'AA',
-          dataIndex: 'AA',
-          align: 'center',
-          fixed: 'left',
+          title: "AA",
+          dataIndex: "AA",
+          align: "center",
+          fixed: "left",
           width: 100,
           show: true
         },
         {
-          title: 'BB',
-          dataIndex: 'BB',
-          align: 'center',
-          fixed: 'right',
+          title: "BB",
+          dataIndex: "BB",
+          align: "center",
+          fixed: "right",
           width: 100,
           show: true
         },
         {
-          title: 'number',
-          dataIndex: 'number',
-          type: 'number',
+          title: "number",
+          dataIndex: "number",
+          type: "number",
           width: 100,
           show: true
         }
-      ]
-      let width = 0
+      ];
+      let width = 0;
       for (let i = 0; i < this.columnLength; i++) {
-        width = parseInt(Math.random() * 300)
+        width = parseInt(Math.random() * 300);
         columns.push({
-          title: 'C_' + i,
-          dataIndex: 'C_' + i,
-          align: 'center',
+          title: "C_" + i,
+          dataIndex: "C_" + i,
+          align: "center",
           width: width < 100 ? 100 : width,
           show: true
-        })
+        });
       }
-      let row = null
-      const rows = []
+      let row = null;
+      const rows = [];
       for (let i = 0; i < this.rowLength; i++) {
-        row = { num: i + 1 }
+        row = { num: i + 1 };
         columns.forEach(column => {
-          row[column.dataIndex] = column.title == 'number' ? i + 1 : column.dataIndex + i
-        })
+          row[column.dataIndex] =
+            column.title == "number" ? i + 1 : column.dataIndex + i;
+        });
 
-        rows.push(row)
+        rows.push(row);
       }
-      this.rows = rows
-      this.columns = columns
-      this.loading = false
-    },
+      this.rows = rows;
+      this.columns = columns;
+      setTimeout(() => {
+        this.loading = false;
+      }, 600);
+    }
   }
 };
 </script>

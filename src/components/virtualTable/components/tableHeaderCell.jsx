@@ -3,14 +3,16 @@ export default {
   props: {
     column: {
       type: Object,
-      default: () => {}
-    }
+      default: () => {},
+    },
   },
   data() {
     return {
       showDropdown: false,
       actionAble: false,
-      sort: ''
+      sort: '',
+      currentWidth: this.column.width || 0,
+      isResizing: false,
     }
   },
   render() {
@@ -18,39 +20,43 @@ export default {
     const props = {
       attrs: {
         rowspan: column.rowSpan,
-        colspan: column.colSpan
+        colspan: column.colSpan,
       },
       class: {
         'hd-table-cell': true,
-        'hd-table-cell-hidden': !column.rowSpan || !column.colSpan
+        'hd-table-cell-hidden': !column.rowSpan || !column.colSpan,
       },
       style: {
         position: 'relative',
         height: column.rowSpan ? column.rowSpan * 40 + 'px' : 0,
         'line-height': column.rowSpan ? column.rowSpan * 40 + 'px' : 0,
-        'z-index': column.rowSpan ? 2 : 1,
+        'z-index': this.isResizing ? 20 : column.rowSpan ? 2 : 1,
         width: column.width + 'px',
-        'text-align': column.align ? column.align : column.colSpan > 1 ? 'center' : 'left'
-      }
+        'text-align': column.align
+          ? column.align
+          : column.colSpan > 1
+          ? 'center'
+          : 'left',
+      },
     }
 
     const titleProps = {
       style: {
-        'font-weight': column.bold ? 'bold' : 'normal'
-      }
+        'font-weight': column.bold ? 'bold' : 'normal',
+      },
     }
 
     const actionProps = {
       class: {
         'hd-table-cell-action': true,
-        'hd-table-cell-action-open': this.showDropdown
+        'hd-table-cell-action-open': this.showDropdown,
       },
       style: {
-        color: this.actionAble ? '#ff7875' : '#69c0ff'
-      }
+        color: this.actionAble ? '#ff7875' : '#69c0ff',
+      },
     }
 
-    const onVisibleChange = visible => {
+    const onVisibleChange = (visible) => {
       this.showDropdown = visible
     }
 
@@ -79,15 +85,15 @@ export default {
 
       this.showDropdown = false
     }
-    let width = this.column.width
-    const onDrag = x => {
-      width = 0
-      this.$emit('resize', this.column, Math.max(x, 1))
-      // this.column.width = Math.max(x, 1)
+
+    const onDrag = (x) => {
+      this.isResizing = true
+      this.currentWidth = Math.max(x, 1)
     }
 
     const onDragstop = () => {
-      width = this.$el.getBoundingClientRect().width
+      this.isResizing = false
+      this.$emit('resize', this.column, this.currentWidth)
     }
 
     return (
@@ -123,20 +129,24 @@ export default {
             </a-menu>
           </a-dropdown>
         )}
-        <vue-draggable-resizable
-          key={column.dataIndex}
-          class="table-draggable-handle"
-          style={{ right: column.width - 5 + 'px' }}
-          w={10}
-          x={width || column.width}
-          z={2}
-          axis="x"
-          draggable={true}
-          resizable={false}
-          onDragging={onDrag}
-          onDragstop={onDragstop}
-        ></vue-draggable-resizable>
+        {column.rowSpan > 0 &&
+          (!column.children || !column.children.length) && (
+            <vue-draggable-resizable
+              key={column.dataIndex}
+              class="table-draggable-handle"
+              classNameDragging="table-draggable-handle-move"
+              style={{ right: column.width - 5 + 'px' }}
+              w={10}
+              x={column.width}
+              z={20}
+              axis="x"
+              draggable={true}
+              resizable={false}
+              onDragging={onDrag}
+              onDragstop={onDragstop}
+            ></vue-draggable-resizable>
+          )}
       </div>
     )
-  }
+  },
 }

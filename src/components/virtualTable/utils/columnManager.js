@@ -189,21 +189,24 @@ export default class columnManager {
     }
 
     const getAllColumns = (columns) => {
-      const _columns = _.cloneDeep(columns)
       const result = []
-      _columns.forEach((column) => {
+      columns.forEach((column) => {
         if (column.show) {
           result.push(column)
 
           if (column.children) {
             result.push.apply(result, getAllColumns(column.children))
+            column.width = column.children.reduce(
+              (sum, column) => sum + (column.width || 0),
+              0
+            )
           }
         }
       })
       return result
     }
 
-    const allColumns = getAllColumns(columns)
+    const allColumns = getAllColumns(_.cloneDeep(columns))
 
     allColumns.forEach((column) => {
       if (!column.children) {

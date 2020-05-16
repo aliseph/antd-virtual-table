@@ -120,17 +120,23 @@ export default {
       }
     },
     loading(value) {
+      // eslint-disable-next-line no-console
+      console.log('---loading---')
+      this.scrollTop()
+
       if (!value) {
         this.filterColumns = [...this.defaultFilter]
         this.initObservable.next()
       }
-    }
+    },
   },
   methods: {
     initOptions() {
       this.scrollManager = this.scrollManager.reset(
         this.filterRows(),
         this.columnManager,
+        this.offsetX,
+        this.offsetY,
         this.$refs
       )
 
@@ -403,7 +409,7 @@ export default {
         realRecord.show = !realRecord.show
         this.columnManager = this.columnManager.reset(this.currentColumns)
         this.initOptions()
-        this.$nextTick(() => this.scrollTop())
+        // this.$nextTick(() => this.scrollTop())
         this.$emit('invisible', column)
       }
 
@@ -571,6 +577,8 @@ export default {
     this.scrollManager = this.scrollManager.reset(
       this.rows,
       this.columnManager,
+      this.offsetX,
+      this.offsetY,
       this.$refs
     )
 

@@ -10,18 +10,22 @@ export default class scrollManager {
     this.totalCellWidth = this.indexCellWidth + this.portalCellWidth
   }
 
-  initOptions() {
-    this.offsetX = 0
-    this.offsetY = 0
-    this.lastStartRow = 0
-    this.lastStartColumn = 0
+  initOptions(offsetX, offsetY) {
     this.lastClusterRowNum = 0
     this.lastClusterColumnNum = 0
-    this.lastScrollLeft = 0
-    this.lastScrollTop = 0
 
-    this.offsetTop = 0
-    this.offsetBottom = 0
+    if (offsetX || offsetY) {
+      this.onScrollLeft(offsetX || 0)
+      this.onScrollTop(offsetY || 0)
+    } else {
+      this.offsetX = 0
+      this.offsetY = 0
+      this.lastStartRow = 0
+      this.lastStartColumn = 0
+
+      this.offsetTop = 0
+      this.offsetBottom = 0
+    }
 
     this.leftColumnsWidth = this.columnManager
       .leftLeafColumns()
@@ -43,7 +47,7 @@ export default class scrollManager {
           )
         : 0
 
-    this.offsetLeft = this.leftColumnsWidth
+    !this.offsetX && (this.offsetLeft = this.leftColumnsWidth)
 
     // 滚动区域的高度
     this.scrollY =
@@ -73,7 +77,7 @@ export default class scrollManager {
     this.orderByKey = orderByKey
   }
 
-  reset(rows, columnManager, $refs) {
+  reset(rows, columnManager, offsetX, offsetY, $refs) {
     if ($refs && $refs.container) {
       if (this.orderBy && this.orderByKey) {
         this.rows = _.orderBy(rows, [this.orderByKey], [this.orderBy]).map(
@@ -95,9 +99,11 @@ export default class scrollManager {
       this.containerY = $refs.container.clientHeight - this.rowHeight // 滚动容器的高度
       this.containerX = $refs.container.clientWidth // 滚动容器的宽度
 
-      this.initOptions()
-      this.updateColumnsByX()
-      this.updateRowsByY()
+      this.initOptions(offsetX, offsetY)
+      if (!offsetX && !offsetY) {
+        this.updateColumnsByX()
+        this.updateRowsByY()
+      }
     }
     return this
   }
@@ -167,10 +173,10 @@ export default class scrollManager {
     } else {
       this.offsetTop = Math.max(this.lastStartRow * this.rowHeight, 0)
 
-      this.offsetBottom = Math.max(
-        this.scrollY - this.keepRows * this.rowHeight - this.offsetTop,
-        0
-      )
+      // this.offsetBottom = Math.max(
+      //   this.scrollY - this.keepRows * this.rowHeight - this.offsetTop,
+      //   0
+      // )
 
       this.showRows = this.rows.slice(
         this.lastStartRow,
@@ -180,6 +186,8 @@ export default class scrollManager {
   }
 
   onScrollLeft(offsetX) {
+    // eslint-disable-next-line no-console
+    console.log('onScrollLeft', offsetX)
     this.offsetX = offsetX
     if (
       this.lastClusterColumnNum !=
@@ -208,6 +216,8 @@ export default class scrollManager {
     if (!this.isClusterizeX) {
       this.showColumns = this.columnManager.centerLeafColumns()
     } else {
+      // eslint-disable-next-line no-console
+      console.log('updateColumnsByX', this.lastStartColumn)
       this.offsetLeft = this.columnManager
         .centerLeafColumns()
         .slice(0, this.lastStartColumn)

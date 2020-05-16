@@ -115,6 +115,7 @@
       .@{hd-table-prefix}-index,
       .@{hd-table-prefix}-portal {
         background: #fff;
+        overflow: hidden;
       }
     }
 
@@ -140,6 +141,7 @@
     }
 
     &-header {
+      z-index: 10;
       .@{hd-table-prefix}-cell,
       .@{hd-table-prefix}-index,
       .@{hd-table-prefix}-portal {
@@ -151,12 +153,17 @@
 
       .table-draggable-handle {
         position: absolute;
-        height: 100% !important;
-        bottom: 0;
+        height: 100%;
+        top: 0;
         left: auto !important;
         right: -5px;
         cursor: col-resize;
         touch-action: none;
+      }
+      .table-draggable-handle-move {
+        background-color: #91d5ff;
+        width: 1px !important;
+        height: 100vh !important;
       }
     }
 
@@ -300,7 +307,7 @@
       height: 40px;
       line-height: 40px;
       position: relative;
-      overflow: hidden;
+      overflow: visible;
       text-overflow: ellipsis;
       white-space: nowrap;
       border-bottom: 1px solid @hd-table-border-color;
