@@ -162,7 +162,7 @@ export default {
       },
     ],
     columnLength: 100,
-    rowLength: 100
+    rowLength: 10000
   }),
   components: {
     VueVirtualTable
