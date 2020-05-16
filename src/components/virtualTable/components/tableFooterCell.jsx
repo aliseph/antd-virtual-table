@@ -59,19 +59,14 @@ export default {
             '%'
           break
         case 'summary':
-          if (this.isAnyRowChecked) {
+          if (this.summary) {
+            value = this.summary ? Math.round(this.summary * 100) / 100 : this.summary
+          } else if (this.isAnyRowChecked) {
             value =
-              Math.round(
-                this.rows.reduce(
-                  (sum, row) => sum + (row._checked && !isNaN(this.getValue(row)) ? this.getValue(row) : 0),
-                  0
-                ) * 100
-              ) / 100
+              Math.round(this.rows.reduce((sum, row) => sum + (row._checked && this.getNumberValue(row)), 0) * 100) /
+              100
           } else {
-            value =
-              Math.round(
-                this.rows.reduce((sum, row) => sum + (!isNaN(this.getValue(row)) ? this.getValue(row) : 0), 0) * 100
-              ) / 100
+            value = Math.round(this.rows.reduce((sum, row) => sum + this.getNumberValue(row), 0) * 100) / 100
           }
           break
         case 'negativeSummary':
@@ -81,7 +76,9 @@ export default {
                 this.rows.reduce(
                   (sum, row) =>
                     sum +
-                    (row._checked && !isNaN(this.getValue(row)) && this.getValue(row) < 0 ? this.getValue(row) : 0),
+                    (row._checked && !isNaN(this.getNumberValue(row)) && this.getNumberValue(row) < 0
+                      ? this.getNumberValue(row)
+                      : 0),
                   0
                 ) * 100
               ) / 100
@@ -89,7 +86,9 @@ export default {
             value =
               Math.round(
                 this.rows.reduce(
-                  (sum, row) => sum + (!isNaN(this.getValue(row)) && this.getValue(row) < 0 ? this.getValue(row) : 0),
+                  (sum, row) =>
+                    sum +
+                    (!isNaN(this.getNumberValue(row)) && this.getNumberValue(row) < 0 ? this.getNumberValue(row) : 0),
                   0
                 ) * 100
               ) / 100
@@ -102,7 +101,9 @@ export default {
                 this.rows.reduce(
                   (sum, row) =>
                     sum +
-                    (row._checked && !isNaN(this.getValue(row)) && this.getValue(row) > 0 ? this.getValue(row) : 0),
+                    (row._checked && !isNaN(this.getNumberValue(row)) && this.getNumberValue(row) > 0
+                      ? this.getNumberValue(row)
+                      : 0),
                   0
                 ) * 100
               ) / 100
@@ -110,7 +111,9 @@ export default {
             value =
               Math.round(
                 this.rows.reduce(
-                  (sum, row) => sum + (!isNaN(this.getValue(row)) && this.getValue(row) > 0 ? this.getValue(row) : 0),
+                  (sum, row) =>
+                    sum +
+                    (!isNaN(this.getNumberValue(row)) && this.getNumberValue(row) > 0 ? this.getNumberValue(row) : 0),
                   0
                 ) * 100
               ) / 100
@@ -120,20 +123,14 @@ export default {
           if (this.isAnyRowChecked) {
             value =
               Math.round(
-                (this.rows.reduce(
-                  (sum, row) => sum + (row._checked && !isNaN(this.getValue(row)) ? this.getValue(row) : 0),
-                  0
-                ) /
+                (this.rows.reduce((sum, row) => sum + (row._checked && this.getNumberValue(row)), 0) /
                   this.rows.filter(row => row._checked).length) *
                   100
               ) / 100
           } else {
             value =
-              Math.round(
-                (this.rows.reduce((sum, row) => sum + (!isNaN(this.getValue(row)) ? this.getValue(row) : 0), 0) /
-                  this.rows.length) *
-                  100
-              ) / 100
+              Math.round((this.rows.reduce((sum, row) => sum + this.getNumberValue(row), 0) / this.rows.length) * 100) /
+              100
           }
           break
         case 'median':
@@ -142,18 +139,20 @@ export default {
           if (this.isAnyRowChecked) {
             value = this.rows
               .filter(row => row._checked)
-              .map(row => (isNaN(this.getValue(row)) ? 0 : this.getValue(row)))
+              .map(row => (isNaN(this.getNumberValue(row)) ? 0 : this.getNumberValue(row)))
           } else {
-            value = _.min(this.rows.map(row => (isNaN(this.getValue(row)) ? 0 : this.getValue(row))))
+            value = _.min(this.rows.map(row => (isNaN(this.getNumberValue(row)) ? 0 : this.getNumberValue(row))))
           }
           break
         case 'max':
           if (this.isAnyRowChecked) {
             value = _.max(
-              this.rows.filter(row => row._checked).map(row => (isNaN(this.getValue(row)) ? 0 : this.getValue(row)))
+              this.rows
+                .filter(row => row._checked)
+                .map(row => (isNaN(this.getNumberValue(row)) ? 0 : this.geNumbertValue(row)))
             )
           } else {
-            value = _.max(this.rows.map(row => (isNaN(this.getValue(row)) ? 0 : this.getValue(row))))
+            value = _.max(this.rows.map(row => (isNaN(this.getNumberValue(row)) ? 0 : this.getNumberValue(row))))
           }
           break
         case 'emptyCount':
@@ -166,18 +165,20 @@ export default {
           break
         case 'zeroCount':
           if (this.isAnyRowChecked) {
-            value = this.rows.filter(row => row._checked && !isNaN(this.getValue(row)) && this.getValue(row) == 0)
-              .length
+            value = this.rows.filter(
+              row => row._checked && !isNaN(this.getNumberValue(row)) && this.getNumberValue(row) == 0
+            ).length
           } else {
-            value = this.rows.filter(row => !isNaN(this.getValue(row)) && this.getValue(row) == 0).length
+            value = this.rows.filter(row => !isNaN(this.getNumberValue(row)) && this.getNumberValue(row) == 0).length
           }
           break
         case 'unZeroCount':
           if (this.isAnyRowChecked) {
-            value = this.rows.filter(row => row._checked && !isNaN(this.getValue(row)) && this.getValue(row) != 0)
-              .length
+            value = this.rows.filter(
+              row => row._checked && !isNaN(this.getNumberValue(row)) && this.getNumberValue(row) != 0
+            ).length
           } else {
-            value = this.rows.filter(row => !isNaN(this.getValue(row)) && this.getValue(row) != 0).length
+            value = this.rows.filter(row => !isNaN(this.getNumberValue(row)) && this.getNumberValue(row) != 0).length
           }
           break
         default:
@@ -186,11 +187,11 @@ export default {
       this.currentValue = value
       if (!isUpdated) this.showDropdown = false
     },
-    getValue(row) {
+    getNumberValue(row) {
       // if (this.column.calculated) {
       //   return this.column.showFormula({ column: this.column, row })
       // } else {
-      return row[this.column.dataIndex]
+      return isNaN(row[this.column.dataIndex]) ? 0 : +row[this.column.dataIndex]
       // }
     }
   },

@@ -5,48 +5,44 @@ export default {
   props: {
     rows: {
       type: Array,
-      default: () => []
+      default: () => [],
     },
     leftColumns: {
       type: Array,
-      default: () => []
+      default: () => [],
     },
     centerColumns: {
       type: Array,
-      default: () => []
+      default: () => [],
     },
     rightColumns: {
       type: Array,
-      default: () => []
-    },
-    scrollX: {
-      type: Number,
-      default: 0
+      default: () => [],
     },
     offsetLeft: {
       type: Number,
-      default: 0
+      default: 0,
     },
     offsetX: {
       type: Number,
-      default: 0
+      default: 0,
     },
     scrollBarSize: {
       type: Number,
-      default: 0
+      default: 0,
     },
     checkedObservable: {
       type: Object,
-      required: true
+      required: true,
     },
     summaryRow: {
       type: Object,
-      default: () => {}
-    }
+      default: () => {},
+    },
   },
   data() {
     return {
-      subscription: null
+      subscription: null,
     }
   },
   methods: {},
@@ -60,24 +56,25 @@ export default {
       offsetX,
       scrollBarSize,
       checkedObservable,
-      summaryRow
+      summaryRow,
     } = this
     const rowProps = {
       class: {
-        'hd-table-row': true
-      }
+        'hd-table-row': true,
+      },
     }
     const centerProps = {
+      key: 'footer-center',
       class: {
-        'hd-table-row-center': true
+        'hd-table-row-center': true,
       },
       style: {
-        transform: `translate3d(${offsetLeft + -1 * offsetX}px,0,0)`
-      }
+        transform: `translate3d(${offsetLeft + -1 * offsetX}px,0,0)`,
+      },
     }
     return (
       <div {...rowProps}>
-        <div class="hd-table-row-fixed-left">
+        <div class="hd-table-row-fixed-left" key="footer-left">
           <div class="hd-table-total">
             <span class="hd-table-index-no">共{rows.length}条</span>
           </div>
@@ -85,6 +82,7 @@ export default {
             <tableFooterCell
               column={column}
               rows={rows}
+              key={index}
               summary={summaryRow ? summaryRow[column.dataIndex] : null}
               checkedObservable={checkedObservable}
             />
@@ -95,16 +93,23 @@ export default {
             <tableFooterCell
               column={column}
               rows={rows}
+              key={index}
+              dataIndex={index}
               summary={summaryRow ? summaryRow[column.dataIndex] : null}
               checkedObservable={checkedObservable}
             />
           ))}
         </div>
-        <div class="hd-table-row-fixed-right">
+        <div class="hd-table-row-fixed-right" key="footer-right">
           {rightColumns.map((column, index) => (
             <tableFooterCell
-              column={rightColumns.length - 1 === index ? { ...column, width: column.width + scrollBarSize } : column}
+              column={
+                rightColumns.length - 1 === index
+                  ? { ...column, width: column.width + scrollBarSize }
+                  : column
+              }
               rows={rows}
+              key={index}
               summary={summaryRow ? summaryRow[column.dataIndex] : null}
               checkedObservable={checkedObservable}
             />
@@ -112,5 +117,5 @@ export default {
         </div>
       </div>
     )
-  }
+  },
 }

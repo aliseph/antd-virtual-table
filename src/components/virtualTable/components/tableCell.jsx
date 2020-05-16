@@ -10,7 +10,11 @@ function isValidElement(element) {
   ) // remove text node
 }
 function isInvalidRenderCellText(text) {
-  return text && !isValidElement(text) && Object.prototype.toString.call(text) === '[object Object]'
+  return (
+    text &&
+    !isValidElement(text) &&
+    Object.prototype.toString.call(text) === '[object Object]'
+  )
 }
 
 export default {
@@ -18,21 +22,18 @@ export default {
   props: {
     record: {
       type: Object,
-      default: () => {}
+      default: () => {},
     },
     column: {
       type: Object,
-      default: () => {}
-    }
-  },
-  inject: {
-    table: { default: () => ({}) }
+      default: () => {},
+    },
   },
   methods: {
     handleClick(e) {
       const {
         record,
-        column: { onCellClick }
+        column: { onCellClick },
       } = this
       if (onCellClick) {
         onCellClick(record, e)
@@ -41,13 +42,13 @@ export default {
     handleDblClick(e) {
       const {
         record,
-        column: { onDbclick }
+        column: { onDbclick },
       } = this
       if (onDbclick) {
         onDbclick(this.column, record)
       }
       this.$emit('dblclickRow', record)
-    }
+    },
   },
   render() {
     const { record, column } = this
@@ -68,12 +69,12 @@ export default {
       attrs: {},
       class: cls,
       style: {
-        width: column.width + 'px'
+        width: column.width + 'px',
       },
       on: {
         click: this.handleClick,
-        dblclick: this.handleDblClick
-      }
+        dblclick: this.handleDblClick,
+      },
     }
     let colSpan
     let rowSpan
@@ -101,5 +102,5 @@ export default {
       tdProps.style = { textAlign: column.align, ...tdProps.style }
     }
     return <div {...tdProps}>{text}</div>
-  }
+  },
 }

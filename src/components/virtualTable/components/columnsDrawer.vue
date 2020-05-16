@@ -2,7 +2,7 @@
   <a-drawer
     :visible="value"
     :wrapStyle="{
-      height: 'calc(100% - 55px)',
+      height: '100%',
       overflow: 'auto',
       'padding-bottom': '53px'
     }"

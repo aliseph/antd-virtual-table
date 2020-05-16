@@ -1,28 +1,13 @@
 import _ from 'lodash'
 
 export default class scrollManager {
-  constructor(rows, columnManager, $refs) {
-    this.rowHeight = 40
+  constructor(rowHeight, benchRows, benchColumns) {
+    this.rowHeight = rowHeight
+    this.benchRows = benchRows
+    this.benchColumns = benchColumns
     this.indexCellWidth = 50
     this.portalCellWidth = 40
     this.totalCellWidth = this.indexCellWidth + this.portalCellWidth
-    if ($refs && $refs.container) {
-      this.rows = rows.map((row, index) => ({
-        ...row,
-        _index: index,
-        _checked: !!row._checked
-      }))
-      this.$refs = $refs
-      this.columnManager = columnManager
-      this.containerY =
-        $refs.container.clientHeight - this.rowHeight * (this.columnManager.headerColumnsRows().length + 1) // 滚动容器的高度
-      this.containerX = $refs.container.clientWidth // 滚动容器的宽度
-
-      this.initOptions()
-      this.updateColumnsByX()
-      this.updateRowsByY()
-      this.updateZoneByX()
-    }
   }
 
   initOptions() {
@@ -40,55 +25,45 @@ export default class scrollManager {
 
     this.leftColumnsWidth = this.columnManager
       .leftLeafColumns()
-      .reduce((sum, column) => sum + (column.show && column.width ? column.width : 0), this.totalCellWidth)
-    this.rightColumnsWidth = this.columnManager
-      .leftLeafColumns()
-      .reduce((sum, column) => sum + (column.show && column.width ? column.width : 0), this.totalCellWidth)
+      .reduce(
+        (sum, column) => sum + (column.width ? column.width : 0),
+        this.totalCellWidth
+      )
+    // this.rightColumnsWidth = this.columnManager
+    //   .leftLeafColumns()
+    //   .reduce((sum, column) => sum + (column.width ? column.width : 0), this.totalCellWidth)
 
     const centerColumns = this.columnManager.leafColumns()
     // 滚动区域的宽度
     this.scrollX =
       centerColumns && centerColumns.length
         ? centerColumns.reduce(
-          (sum, column) => sum + (column.show && column.width ? column.width : 0),
-          this.totalCellWidth + 20
-        )
+            (sum, column) => sum + (column.width ? column.width : 0),
+            this.totalCellWidth + 20
+          )
         : 0
 
     this.offsetLeft = this.leftColumnsWidth
 
     // 滚动区域的高度
-    this.scrollY = this.rows && this.rows.length ? this.rows.length * this.rowHeight + 20 : 0
+    this.scrollY =
+      this.rows && this.rows.length ? this.rows.length * this.rowHeight + 20 : 0
 
-    this.keepRows = Math.floor(((this.containerY / this.rowHeight) * 3) / 2) + 4
-    this.remainRows = Math.floor(this.keepRows * 0.2)
-    this.benchRows = this.keepRows - this.remainRows
+    this.remainRows = Math.floor(this.containerY / this.rowHeight)
+    this.keepRows = this.remainRows + this.benchRows * 2
     this.isClusterizeY = this.keepRows < this.rows.length // 竖向是否需要虚拟化展示
     this.visibleZoneHeight = this.remainRows * this.rowHeight // 可见区域高度
-    this.isScrollY = this.rows && this.rows.length && this.scrollY > this.containerY
+    this.isScrollY =
+      this.rows && this.rows.length && this.scrollY > this.containerY
 
-    const minColumnWidth = _.min(this.columnManager.centerLeafColumns().map(column => column.width))
+    const minColumnWidth = _.min(
+      this.columnManager.centerLeafColumns().map((column) => column.width)
+    )
 
-    this.keepColumns = Math.floor(((this.containerX / minColumnWidth) * 3) / 2) + 8
-    this.remainColumns = Math.floor(this.keepColumns * 0.2)
-    this.benchColumns = this.keepColumns - this.remainColumns
-    this.isClusterizeX = this.keepColumns < this.columnManager.centerLeafColumns().length // 横向是否需要虚拟化展示
-
-    if (this.isClusterizeX) {
-      const arr = []
-      let startIndex = 0
-      while (startIndex < this.columnManager.centerLeafColumns().length) {
-        arr.push(
-          this.columnManager
-            .centerLeafColumns()
-            .slice(startIndex, (startIndex += this.remainColumns))
-            .reduce((sum, column) => sum + column.width, 0)
-        )
-      }
-      this.columnsBenchWidthArr = arr
-    } else {
-      this.columnsBenchWidthArr = []
-    }
+    this.remainRows = Math.floor(this.containerX / minColumnWidth)
+    this.keepColumns = this.remainRows + this.benchColumns * 2
+    this.isClusterizeX =
+      this.keepColumns < this.columnManager.centerLeafColumns().length // 横向是否需要虚拟化展示
 
     this.isScrollX = this.scrollX > this.containerX
   }
@@ -101,19 +76,21 @@ export default class scrollManager {
   reset(rows, columnManager, $refs) {
     if ($refs && $refs.container) {
       if (this.orderBy && this.orderByKey) {
-        this.rows = _.orderBy(rows, [this.orderByKey], [this.orderBy]).map((row, index) => ({
-          ...row,
-          _index: index,
-          _checked: !!row._checked
-        }))
+        this.rows = _.orderBy(rows, [this.orderByKey], [this.orderBy]).map(
+          (row, index) => ({
+            ...row,
+            _index: index,
+            _checked: !!row._checked,
+          })
+        )
       } else {
         this.rows = rows.map((row, index) => ({
           ...row,
           _index: index,
-          _checked: !!row._checked
+          _checked: !!row._checked,
         }))
       }
-      this.$refs = $refs
+
       this.columnManager = columnManager
       this.containerY = $refs.container.clientHeight - this.rowHeight // 滚动容器的高度
       this.containerX = $refs.container.clientWidth // 滚动容器的宽度
@@ -121,9 +98,34 @@ export default class scrollManager {
       this.initOptions()
       this.updateColumnsByX()
       this.updateRowsByY()
-      this.updateZoneByX()
     }
     return this
+  }
+
+  updateRows(rows) {
+    if (this.orderBy && this.orderByKey) {
+      this.rows = _.orderBy(rows, [this.orderByKey], [this.orderBy]).map(
+        (row, index) => ({
+          ...row,
+          _index: index,
+          _checked: !!row._checked,
+        })
+      )
+    } else {
+      this.rows = rows.map((row, index) => ({
+        ...row,
+        _index: index,
+        _checked: !!row._checked,
+      }))
+    }
+    if (!this.isScrollY) {
+      this.showRows = this.rows
+    } else {
+      this.showRows = this.rows.slice(
+        this.lastStartRow,
+        this.keepRows + this.lastStartRow
+      )
+    }
   }
 
   updateRow(row, index) {
@@ -133,25 +135,31 @@ export default class scrollManager {
     if (!this.isScrollY) {
       this.showRows = this.rows
     } else {
-      this.showRows = this.rows.slice(this.lastStartRow, this.keepRows + this.lastStartRow)
+      this.showRows = this.rows.slice(
+        this.lastStartRow,
+        this.keepRows + this.lastStartRow
+      )
     }
     return this.rows
   }
 
   onScrollTop(offsetY) {
     this.offsetY = offsetY
-    if (this.lastClusterRowNum != (this.lastClusterRowNum = this.getClusterRowNum(offsetY))) {
-      this.lastStartRow =
-        this.remainRows * this.lastClusterRowNum + this.keepRows > this.rows.length
-          ? this.rows.length - this.keepRows
-          : this.remainRows * this.lastClusterRowNum
+    if (
+      this.lastClusterRowNum !=
+      (this.lastClusterRowNum = this.getClusterRowNum(offsetY))
+    ) {
+      this.lastStartRow = Math.min(
+        this.lastClusterRowNum,
+        this.rows.length - this.keepRows
+      )
 
       this.updateRowsByY()
     }
     return this.lastClusterRowNum
   }
   getClusterRowNum(scrollTop) {
-    return Math.floor(scrollTop / this.visibleZoneHeight) || 0
+    return Math.max(Math.floor(scrollTop / this.rowHeight) - 2, 0)
   }
   updateRowsByY() {
     if (!this.isClusterizeY) {
@@ -159,37 +167,58 @@ export default class scrollManager {
     } else {
       this.offsetTop = Math.max(this.lastStartRow * this.rowHeight, 0)
 
-      this.offsetBottom = Math.max(this.scrollY - this.keepRows * this.rowHeight - this.offsetTop, 0)
+      this.offsetBottom = Math.max(
+        this.scrollY - this.keepRows * this.rowHeight - this.offsetTop,
+        0
+      )
 
-      this.showRows = this.rows.slice(this.lastStartRow, this.keepRows + this.lastStartRow)
+      this.showRows = this.rows.slice(
+        this.lastStartRow,
+        this.keepRows + this.lastStartRow
+      )
     }
   }
 
   onScrollLeft(offsetX) {
     this.offsetX = offsetX
-    if (this.lastClusterColumnNum != (this.lastClusterColumnNum = this.getClusterColumnNum(offsetX))) {
-      this.lastStartColumn = this.remainColumns * this.lastClusterColumnNum
+    if (
+      this.lastClusterColumnNum !=
+      (this.lastClusterColumnNum = this.getClusterColumnNum(offsetX))
+    ) {
+      this.lastStartColumn = Math.min(
+        this.lastClusterColumnNum,
+        this.columnManager.leafColumns().length - this.keepColumns
+      )
       this.updateColumnsByX()
-      this.updateZoneByX()
     }
     return this.lastClusterColumnNum
   }
   getClusterColumnNum(scrollLeft) {
-    let temp = scrollLeft
-    return this.columnsBenchWidthArr.findIndex(width => (temp -= width) <= 0)
+    let startColumnIndex = 0
+    let scrollColumnWidth = 0
+    const centerColumns = this.columnManager.centerLeafColumns()
+    while (scrollColumnWidth < scrollLeft) {
+      scrollColumnWidth = centerColumns
+        .slice(0, ++startColumnIndex)
+        .reduce((sum, column) => sum + (column.width || 0), 0)
+    }
+    return Math.max(startColumnIndex - 2, 0)
   }
   updateColumnsByX() {
     if (!this.isClusterizeX) {
       this.showColumns = this.columnManager.centerLeafColumns()
     } else {
+      this.offsetLeft = this.columnManager
+        .centerLeafColumns()
+        .slice(0, this.lastStartColumn)
+        .reduce(
+          (sum, column) => sum + (column.width || 0),
+          this.leftColumnsWidth
+        )
+
       this.showColumns = this.columnManager
         .centerLeafColumns()
         .slice(this.lastStartColumn, this.keepColumns + this.lastStartColumn)
     }
-  }
-  updateZoneByX() {
-    this.offsetLeft = this.columnsBenchWidthArr
-      .slice(0, this.lastClusterColumnNum)
-      .reduce((sum, width) => sum + width, this.leftColumnsWidth)
   }
 }

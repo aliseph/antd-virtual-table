@@ -19,10 +19,6 @@ export default {
       type: Array,
       default: () => [],
     },
-    scrollX: {
-      type: Number,
-      default: 0,
-    },
     offsetLeft: {
       type: Number,
       default: 0,
@@ -60,13 +56,14 @@ export default {
         'hd-table-row-checked': row._checked,
       },
       on: {
-        click: event => {
-          event.stopPropagation()
-          this.$emit('checked', !row._checked)
-        },
+        // click: event => {
+        //   event.stopPropagation()
+        //   this.$emit('checked', !row._checked)
+        // }
       },
     }
     const centerProps = {
+      key: 'body-center',
       class: {
         'hd-table-row-center': true,
       },
@@ -75,18 +72,18 @@ export default {
       },
     }
 
-    const onShowDetail = event => {
+    const onShowDetail = (event) => {
       event.stopPropagation()
       this.$emit('showDetail', row)
     }
 
-    const onDblclickRow = row => {
+    const onDblclickRow = (row) => {
       this.$emit('dblclickRow', row)
     }
 
     return (
       <div {...rowProps}>
-        <div class="hd-table-row-fixed-left">
+        <div class="hd-table-row-fixed-left" key="body-left">
           <div class="hd-table-index" title={row._index + 1}>
             <span class="hd-table-index-no">{row._index + 1}</span>
             <a-checkbox
@@ -113,11 +110,12 @@ export default {
               column={column}
               record={row}
               key={index}
+              dataIndex={index}
               onDblclickRow={onDblclickRow}
             />
           ))}
         </div>
-        <div class="hd-table-row-fixed-right">
+        <div class="hd-table-row-fixed-right" key="body-right">
           {rightColumns.map((column, index) => (
             <tableCell
               column={column}

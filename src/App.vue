@@ -4,13 +4,11 @@
       <a-radio-button value="0">单表头</a-radio-button>
       <a-radio-button value="1">多表头</a-radio-button>
     </a-radio-group>
-    <span>
-      &nbsp;&nbsp;列数：
-      <a-input-number :min="1" :max="10" v-model="columnLength" @change="onChange" />
+    <span>&nbsp;&nbsp;列数：
+      <a-input-number :min="1" :max="10" v-model="columnLength" @change="onChange"/>
     </span>
-    <span v-if="multiHeaders==0">
-      &nbsp;&nbsp;行数：
-      <a-input-number :min="1" :max="10" v-model="rowLength" @change="onChange" />
+    <span v-if="multiHeaders==0">&nbsp;&nbsp;行数：
+      <a-input-number :min="1" :max="10" v-model="rowLength" @change="onChange"/>
     </span>
     &nbsp;&nbsp;
     <a-button type="primary" @click="onChange">重新生成数据</a-button>&nbsp;&nbsp;
@@ -33,7 +31,11 @@
 </template>
 
 <script>
+import _ from 'lodash'
 import VueVirtualTable from "@/components/virtualTable/index.jsx";
+
+// eslint-disable-next-line no-eval
+const calc = eval
 
 const data = [];
 for (let i = 0; i < 100; i++) {
@@ -49,8 +51,6 @@ for (let i = 0; i < 100; i++) {
     gender: 'M',
   });
 }
-
-
 
 export default {
   name: "app",
@@ -162,7 +162,7 @@ export default {
       },
     ],
     columnLength: 100,
-    rowLength: 10000
+    rowLength: 1000
   }),
   components: {
     VueVirtualTable

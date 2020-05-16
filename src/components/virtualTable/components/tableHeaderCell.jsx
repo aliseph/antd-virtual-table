@@ -25,6 +25,7 @@ export default {
         'hd-table-cell-hidden': !column.rowSpan || !column.colSpan
       },
       style: {
+        position: 'relative',
         height: column.rowSpan ? column.rowSpan * 40 + 'px' : 0,
         'line-height': column.rowSpan ? column.rowSpan * 40 + 'px' : 0,
         'z-index': column.rowSpan ? 2 : 1,
@@ -78,6 +79,17 @@ export default {
 
       this.showDropdown = false
     }
+    let width = this.column.width
+    const onDrag = x => {
+      width = 0
+      this.$emit('resize', this.column, Math.max(x, 1))
+      // this.column.width = Math.max(x, 1)
+    }
+
+    const onDragstop = () => {
+      width = this.$el.getBoundingClientRect().width
+    }
+
     return (
       <div {...props}>
         <span {...titleProps}>{column.title}</span>
@@ -111,6 +123,19 @@ export default {
             </a-menu>
           </a-dropdown>
         )}
+        <vue-draggable-resizable
+          key={column.dataIndex}
+          class="table-draggable-handle"
+          style={{ right: column.width - 5 + 'px' }}
+          w={10}
+          x={width || column.width}
+          z={2}
+          axis="x"
+          draggable={true}
+          resizable={false}
+          onDragging={onDrag}
+          onDragstop={onDragstop}
+        ></vue-draggable-resizable>
       </div>
     )
   }

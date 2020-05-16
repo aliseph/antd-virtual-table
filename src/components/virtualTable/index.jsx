@@ -24,6 +24,10 @@ export default {
       type: Boolean,
       default: false,
     },
+    showFooter: {
+      type: Boolean,
+      default: true,
+    },
     multiple: {
       type: Boolean,
       default: true,
@@ -35,6 +39,25 @@ export default {
     summaryRow: {
       type: Object,
     },
+    rowClassName: {
+      type: Function,
+    },
+    defaultFilter: {
+      type: Array,
+      default: () => [],
+    },
+    rowHeight: {
+      type: Number,
+      default: 40,
+    },
+    benchRows: {
+      type: Number,
+      default: 2,
+    },
+    benchColumns: {
+      type: Number,
+      default: 2,
+    },
   },
   data() {
     return {
@@ -45,7 +68,11 @@ export default {
       filterColumns: [],
       filterVisible: false,
       columnManager: new ColumnManager(this.columns),
-      scrollManager: new ScrollManager(),
+      scrollManager: new ScrollManager(
+        this.rowHeight,
+        this.benchRows,
+        this.benchColumns
+      ),
       destroy$: new Subject(),
       initObservable: new Subject(),
       initSubscription: null,
@@ -59,13 +86,13 @@ export default {
       scrollX: 0, // 滚动区域的宽度
       scrollY: 0, // 滚动区域的高度
       containerX: 0, // 滚动容器的宽度
-      containerY: 0, // 滚动容器的高度
+      // containerY: 0, // 滚动容器的高度
       isScrollX: false,
       isScrollY: false,
       leftColumns: [],
       rightColumns: [],
       leftColumnsWidth: 0,
-      rightColumnsWidth: 0,
+      // rightColumnsWidth: 0,
       scrollBarSize: 0,
       // 以下为滚动中变量
       showRows: [], // 可见行
@@ -78,23 +105,26 @@ export default {
     }
   },
   watch: {
-    columns() {
-      this.columnManager = this.columnManager.reset(
-        this.updateColumns(this.columns)
-      )
-      this.filterColumns = []
+    columns(columns) {
+      this.columnManager = this.columnManager.reset(this.updateColumns(columns))
+      this.filterColumns = [...this.defaultFilter]
       this.initObservable.next()
     },
-    rows() {
+    rows(rows, oldRows) {
       this.lastCheckedIndex = -1
-      this.filterColumns = []
-      this.initObservable.next()
-    },
-    loading() {
-      if (this.loading) {
-        this.initObservable.next()
+      this.filterColumns = [...this.defaultFilter]
+      if (rows.length != oldRows.length) {
+        !this.loading && this.initObservable.next()
+      } else {
+        !this.loading && this.updateRows()
       }
     },
+    loading(value) {
+      if (!value) {
+        this.filterColumns = [...this.defaultFilter]
+        this.initObservable.next()
+      }
+    }
   },
   methods: {
     initOptions() {
@@ -107,19 +137,21 @@ export default {
       this.showColumns = this.scrollManager.showColumns
       this.showRows = this.scrollManager.showRows
       this.offsetLeft = this.scrollManager.offsetLeft
+      this.offsetTop = this.scrollManager.offsetTop
       this.headerRows = this.columnManager.headerColumnsRows()
       this.currentColumns = this.columnManager.columns
       this.leftColumns = this.columnManager.leftLeafColumns()
       this.rightColumns = this.columnManager.rightLeafColumns()
       this.currentRows = this.scrollManager.rows
       this.scrollX = this.scrollManager.scrollX
+      this.isReachRight = !this.isScrollX
       this.scrollY = this.scrollManager.scrollY
       this.isScrollX = this.scrollManager.isScrollX
       this.isScrollY = this.scrollManager.isScrollY
       this.containerX = this.scrollManager.containerX
-      this.containerY = this.scrollManager.containerY
+      // this.containerY = this.scrollManager.containerY
       this.leftColumnsWidth = this.scrollManager.leftColumnsWidth
-      this.rightColumnsWidth = this.scrollManager.rightColumnsWidth
+      // this.rightColumnsWidth = this.scrollManager.rightColumnsWidth
 
       this.isAnyColumnsFilter = this.columnManager.isAnyColumnsFilter()
       this.$nextTick(() => {
@@ -136,7 +168,7 @@ export default {
       this.scrollEvent = fromEvent(this.$refs.scrollContainer, 'scroll')
         .pipe(
           takeUntil(this.destroy$),
-          tap(event => {
+          tap((event) => {
             if (
               event.target.scrollLeft + event.target.clientWidth ==
               event.target.scrollWidth
@@ -153,8 +185,7 @@ export default {
               this.$emit('reach-bottom')
             }
           }),
-          sampleTime(0, animationFrameScheduler),
-          map(event => {
+          map((event) => {
             const { scrollTop, scrollLeft } = event.target
             return {
               x: scrollLeft,
@@ -162,10 +193,13 @@ export default {
             }
           })
         )
-        .subscribe(offset => {
+        .subscribe((offset) => {
           this.$emit('scroll', offset)
           this.onScroll(offset)
         })
+    },
+    scrollTop() {
+      this.syncScroll(0, 0)
     },
     onScroll(offset) {
       let update = false
@@ -200,22 +234,25 @@ export default {
       this.showRows = this.scrollManager.showRows
       this.offsetTop = this.scrollManager.offsetTop
     },
+    updateRows() {
+      this.scrollManager.updateRows(this.rows)
+    },
     updateColumns(cols = []) {
       const columns = []
       const { $slots, $scopedSlots } = this
-      cols.forEach(col => {
+      cols.forEach((col) => {
         const { slots = {}, scopedSlots = {}, ...resetProps } = col
         const column = {
           ...resetProps,
         }
-        Object.keys(slots).forEach(key => {
+        Object.keys(slots).forEach((key) => {
           const name = slots[key]
           if (column[key] === undefined && $slots[name]) {
             column[key] =
               $slots[name].length === 1 ? $slots[name][0] : $slots[name]
           }
         })
-        Object.keys(scopedSlots).forEach(key => {
+        Object.keys(scopedSlots).forEach((key) => {
           const name = scopedSlots[key]
           if (column[key] === undefined && $scopedSlots[name]) {
             column[key] = $scopedSlots[name]
@@ -233,73 +270,77 @@ export default {
     },
     filterRows() {
       let currentRows = [...this.rows]
-      this.filterColumns.forEach(column => {
+      this.filterColumns.forEach((column) => {
         if (column.symbol) {
           switch (column.symbol) {
             case 'like':
-              currentRows = currentRows.filter(row =>
+              currentRows = currentRows.filter((row) =>
                 row[column.dataIndex].includes(column.condition)
               )
               break
             case 'eq':
               currentRows = currentRows.filter(
-                row => row[column.dataIndex] == column.condition
+                (row) => row[column.dataIndex] == column.condition
               )
               break
             case 'ne':
               currentRows = currentRows.filter(
-                row => row[column.dataIndex] != column.condition
+                (row) => row[column.dataIndex] != column.condition
               )
               break
             case 'isNull':
               currentRows = currentRows.filter(
-                row =>
+                (row) =>
                   row[column.dataIndex] == null ||
                   row[column.dataIndex] == undefined
               )
               break
             case 'isNotNull':
               currentRows = currentRows.filter(
-                row =>
+                (row) =>
                   row[column.dataIndex] != null &&
                   row[column.dataIndex] != undefined
               )
               break
             case 'gt':
               currentRows = currentRows.filter(
-                row => row[column.dataIndex] > column.condition
+                (row) => row[column.dataIndex] > column.condition
               )
               break
             case 'ge':
               currentRows = currentRows.filter(
-                row => row[column.dataIndex] >= column.condition
+                (row) => row[column.dataIndex] >= column.condition
               )
               break
             case 'lt':
               currentRows = currentRows.filter(
-                row => row[column.dataIndex] < column.condition
+                (row) => row[column.dataIndex] < column.condition
               )
               break
             case 'le':
               currentRows = currentRows.filter(
-                row => row[column.dataIndex] <= column.condition
+                (row) => row[column.dataIndex] <= column.condition
               )
               break
             case 'eqzero':
               currentRows = currentRows.filter(
-                row => row[column.dataIndex] == 0
+                (row) => row[column.dataIndex] == 0
               )
               break
             case 'nezero':
               currentRows = currentRows.filter(
-                row => row[column.dataIndex] != 0
+                (row) => row[column.dataIndex] != 0
               )
               break
             case 'ltzero':
-              currentRows = currentRows.filter(row => row[column.dataIndex] < 0)
+              currentRows = currentRows.filter(
+                (row) => row[column.dataIndex] < 0
+              )
               break
             case 'gtzero':
-              currentRows = currentRows.filter(row => row[column.dataIndex] > 0)
+              currentRows = currentRows.filter(
+                (row) => row[column.dataIndex] > 0
+              )
               break
             default:
               break
@@ -319,6 +360,7 @@ export default {
         multiple,
       } = this
       const headerProps = {
+        key: 'table-header',
         class: {
           'hd-table-header': true,
           'hd-table-header-empty':
@@ -330,7 +372,7 @@ export default {
         0
       )
 
-      const onCheckedAll = checked => {
+      const onCheckedAll = (checked) => {
         this.currentRows = this.currentRows.map((row, index) => {
           row = { ...row, _checked: checked }
           this.scrollManager.updateRow(row, index)
@@ -350,24 +392,25 @@ export default {
         this.initOptions()
       }
 
-      const onInvisible = column => {
+      const onInvisible = (column) => {
         const currentDataList = this.columnManager.columnList(
           this.currentColumns
         )
         let realRecord = currentDataList.find(
-          data => data.dataIndex == column.dataIndex
+          (data) => data.dataIndex == column.dataIndex
         )
         realRecord = realRecord || {}
         realRecord.show = !realRecord.show
         this.columnManager = this.columnManager.reset(this.currentColumns)
         this.initOptions()
+        this.$nextTick(() => this.scrollTop())
         this.$emit('invisible', column)
       }
 
-      const onFilter = column => {
+      const onFilter = (column) => {
         // this.$emit("filter", column);
         const index = this.filterColumns.findIndex(
-          col => col.dataIndex == column.dataIndex
+          (col) => col.dataIndex == column.dataIndex
         )
         if (index > -1) {
           this.filterColumns.splice(index, 1)
@@ -375,6 +418,19 @@ export default {
           this.filterColumns.push({ ...column })
         }
         this.filterVisible = true
+      }
+
+      const onResize = (column, width) => {
+        const currentDataList = this.columnManager.columnList(
+          this.currentColumns
+        )
+        let realRecord = currentDataList.find(
+          (data) => data.dataIndex == column.dataIndex
+        )
+        realRecord = realRecord || {}
+        realRecord.width = width
+        this.columnManager = this.columnManager.reset(this.currentColumns)
+        this.initOptions()
       }
 
       return (
@@ -386,7 +442,6 @@ export default {
               multiple={multiple}
               checkedCount={checkedCount}
               totalCount={currentRows.length}
-              scrollX={scrollX}
               offsetX={offsetX}
               offsetLeft={leftColumnsWidth}
               scrollBarSize={scrollBarSize}
@@ -397,6 +452,7 @@ export default {
               onSorted={onSorted}
               onInvisible={onInvisible}
               onFilter={onFilter}
+              onResize={onResize}
             />
           ))}
         </div>
@@ -404,21 +460,20 @@ export default {
     },
     renderBody() {
       const {
-        scrollX,
         offsetLeft,
         offsetX,
         showColumns,
         showRows,
         leftColumns,
         rightColumns,
+        rowClassName,
       } = this
-
       const onChecked = (checked, row, index) => {
         const _row = { ...row, _checked: checked }
         if (this.multiple) {
           this.$set(this.showRows, index, _row)
-          this.currentRows = this.scrollManager.updateRow(_row, index)
-          const checkedRows = this.currentRows.filter(row => row._checked)
+          this.currentRows = this.scrollManager.updateRow(_row, _row._index)
+          const checkedRows = this.currentRows.filter((row) => row._checked)
           this.$emit('checked', checkedRows)
           this.checkedObservable.next(checkedRows)
         } else {
@@ -441,26 +496,27 @@ export default {
         }
       }
 
-      const onShowDetail = row => {
+      const onShowDetail = (row) => {
         this.$emit('showDetail', row, row._index)
       }
 
-      const onDblclickRow = row => {
+      const onDblclickRow = (row) => {
         event.stopPropagation()
         this.$emit('dblclick-row', row, row._index)
       }
 
       return showRows.map((row, index) => (
         <tableRow
+          class={rowClassName && rowClassName(row, index)}
+          dataIndex={index}
           key={index}
-          scrollX={scrollX}
           offsetX={offsetX}
           offsetLeft={offsetLeft}
           row={row}
           centerColumns={showColumns}
           leftColumns={leftColumns}
           rightColumns={rightColumns}
-          onChecked={checked => onChecked(checked, row, index)}
+          onChecked={(checked) => onChecked(checked, row, index)}
           onShowDetail={onShowDetail}
           onDblclickRow={onDblclickRow}
           style={{
@@ -484,6 +540,7 @@ export default {
         summaryRow,
       } = this
       const footerProps = {
+        key: 'table-footer',
         class: {
           'hd-table-footer': true,
           'hd-table-footer-empty':
@@ -493,7 +550,6 @@ export default {
       return (
         <div {...footerProps}>
           <tableFooterRow
-            scrollX={scrollX}
             scrollBarSize={scrollBarSize}
             offsetX={offsetX}
             offsetLeft={offsetLeft}
@@ -523,14 +579,14 @@ export default {
     this.initSubscription = this.initObservable
       .pipe(takeUntil(this.destroy$), sampleTime(0, animationFrameScheduler))
       .subscribe(() => {
-        this.initOptions()
+        !this.loading && this.initOptions()
       })
 
     this.initObservable.next()
 
     this.updateSubscription = this.updateObservable
       .pipe(takeUntil(this.destroy$), sampleTime(0, animationFrameScheduler))
-      .subscribe(offset => {
+      .subscribe((offset) => {
         this.updateTable(offset)
       })
 
@@ -554,6 +610,7 @@ export default {
   render() {
     const {
       loading,
+      showFooter,
       scrollX,
       scrollY,
       offsetX,
@@ -563,8 +620,7 @@ export default {
       columnManager,
       isAnyColumnsFilter,
     } = this
-
-    const onUpdateColumns = columns => {
+    const onUpdateColumns = (columns) => {
       this.columnManager = this.columnManager.reset(columns)
       this.initOptions()
     }
@@ -574,10 +630,10 @@ export default {
     //   this.initOptions()
     // }
 
-    const onFilter = columns => {
-      this.filterColumns = columns
-      console.log(this.filterColumns)
+    const onFilter = (columns) => {
+      this.filterColumns = [...columns]
       this.$emit('filter', this.filterColumns)
+      this.scrollTop()
       this.initOptions()
     }
 
@@ -586,22 +642,21 @@ export default {
         <div
           class={{
             'hd-table': true,
+            'hd-table-loading': loading,
             'hd-table-reach-left': !offsetX,
             'hd-table-reach-right': isReachRight,
           }}
         >
-          {!loading && this.renderHeader()}
+          {this.renderHeader()}
           <div
             class="hd-table-body-container"
             ref="scrollContainer"
             key="bodyContainer"
           >
-            {loading && (
-              <div class="hd-table-spin-container">
-                <a-spin />
-              </div>
-            )}
-            {!loading && (!showRows || !showRows.length) && (
+            <div class="hd-table-spin-container">
+              <a-spin />
+            </div>
+            {(!showRows || !showRows.length) && (
               <div class="hd-table-placeholder">
                 <a-empty
                   class=" ant-empty-normal"
@@ -612,6 +667,7 @@ export default {
 
             <div
               class="hd-table-body"
+              key="table-body"
               style={{
                 width: '100%',
                 height: scrollY ? scrollY + 'px' : 'auto',
@@ -626,23 +682,23 @@ export default {
                   width: scrollX + 'px',
                 }}
               />
-              {!loading && this.renderBody()}
+              {this.renderBody()}
             </div>
           </div>
-          {!loading && this.renderFooter()}
+          {showFooter && this.renderFooter()}
         </div>
-        {!loading && isAnyColumnsFilter && (
+        {isAnyColumnsFilter && (
           <filterBar
             columns={this.filterColumns}
             onFilter={onFilter}
             value={this.filterVisible}
-            onInput={value => (this.filterVisible = value)}
+            onInput={(value) => (this.filterVisible = value)}
           />
         )}
-        {!loading && !!currentColumns && !!currentColumns.length && (
+        {!!currentColumns && !!currentColumns.length && (
           <columnsDrawer
             value={this.showColumnsDrawer}
-            onInput={visible => (this.showColumnsDrawer = visible)}
+            onInput={(visible) => (this.showColumnsDrawer = visible)}
             columns={currentColumns}
             columnManager={columnManager}
             onUpdateColumns={onUpdateColumns}

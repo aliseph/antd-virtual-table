@@ -1,8 +1,8 @@
 import _ from 'lodash'
 export default class columnManager {
   constructor(columns) {
-    this.columns = columns.map(column => ({
-      ...column
+    this.columns = columns.map((column) => ({
+      ...column,
     }))
     this._cached = {}
   }
@@ -10,11 +10,11 @@ export default class columnManager {
   treeToArray(tree, id = 'id', pid = 'pid', children = 'children') {
     const result = []
     let temp = []
-    tree.forEach((item, index) => {
+    tree.forEach((item) => {
       result.push(item)
       if (item[children]) {
         temp = this.treeToArray(item[children], id, pid, children)
-        temp.map(_item => {
+        temp.map((_item) => {
           _item[pid] = item[id]
           return _item
         })
@@ -30,64 +30,86 @@ export default class columnManager {
 
   isAnyColumnsFilter() {
     return this._cache('isAnyColumnsFilter', () => {
-      return this.columnList(this.columns).some(column => !!column.filter)
+      return this.columnList(this.columns).some((column) => !!column.filter)
     })
   }
 
   isAnyColumnsLeftFixed() {
     return this._cache('isAnyColumnsLeftFixed', () => {
-      return this.columns.some(column => column.fixed === 'left' || column.fixed === true)
+      return this.columns.some(
+        (column) => column.fixed === 'left' || column.fixed === true
+      )
     })
   }
 
   isAnyColumnsRightFixed() {
     return this._cache('isAnyColumnsRightFixed', () => {
-      return this.columns.some(column => column.fixed === 'right')
+      return this.columns.some((column) => column.fixed === 'right')
     })
   }
 
   centerColumns() {
     return this._cache('centerColumns', () => {
-      return this.groupedColumns().filter(column => column.show && !column.fixed)
+      return this.groupedColumns().filter(
+        (column) => column.show && !column.fixed
+      )
     })
   }
 
   leftColumns() {
     return this._cache('leftColumns', () => {
-      return this.groupedColumns().filter(column => column.show && (column.fixed === 'left' || column.fixed === true))
+      return this.groupedColumns().filter(
+        (column) =>
+          column.show && (column.fixed === 'left' || column.fixed === true)
+      )
     })
   }
 
   rightColumns() {
     return this._cache('rightColumns', () => {
-      return this.groupedColumns().filter(column => column.show && column.fixed === 'right')
+      return this.groupedColumns().filter(
+        (column) => column.show && column.fixed === 'right'
+      )
     })
   }
 
   leafColumns() {
-    return this._cache('leafColumns', () => this._leafColumns(this.columns))
+    return this._cache('leafColumns', () =>
+      this._leafColumns(this.columns.filter((column) => column.show))
+    )
   }
 
   centerLeafColumns() {
-    return this._cache('centerLeafColumns', () => this._leafColumns(this.centerColumns()))
+    return this._cache('centerLeafColumns', () =>
+      this._leafColumns(this.centerColumns())
+    )
   }
 
   leftLeafColumns() {
-    return this._cache('leftLeafColumns', () => this._leafColumns(this.leftColumns()))
+    return this._cache('leftLeafColumns', () =>
+      this._leafColumns(this.leftColumns())
+    )
   }
 
   rightLeafColumns() {
-    return this._cache('rightLeafColumns', () => this._leafColumns(this.rightColumns()))
+    return this._cache('rightLeafColumns', () =>
+      this._leafColumns(this.rightColumns())
+    )
   }
 
   // add appropriate rowspan and colspan to column
   groupedColumns() {
     return this._cache('groupedColumns', () => {
-      const _groupColumns = (columns, currentRow = 0, parentColumn = {}, rows = []) => {
+      const _groupColumns = (
+        columns,
+        currentRow = 0,
+        parentColumn = {},
+        rows = []
+      ) => {
         // track how many rows we got
         rows[currentRow] = rows[currentRow] || []
         const grouped = []
-        const setRowSpan = column => {
+        const setRowSpan = (column) => {
           const rowSpan = rows.length - currentRow
           if (
             column &&
@@ -103,7 +125,12 @@ export default class columnManager {
           rows[currentRow].push(newColumn)
           parentColumn.colSpan = parentColumn.colSpan || 0
           if (newColumn.children && newColumn.children.length > 0) {
-            newColumn.children = _groupColumns(newColumn.children, currentRow + 1, newColumn, rows)
+            newColumn.children = _groupColumns(
+              newColumn.children,
+              currentRow + 1,
+              newColumn,
+              rows
+            )
             parentColumn.colSpan += newColumn.colSpan
           } else {
             parentColumn.colSpan++
@@ -125,7 +152,9 @@ export default class columnManager {
   }
 
   headerColumnsRows() {
-    return this._cache('headerColumnsRows', () => this._getHeaderRows(this.columns))
+    return this._cache('headerColumnsRows', () =>
+      this._getHeaderRows(this.columns)
+    )
   }
 
   _getHeaderRows(columns) {
@@ -139,7 +168,7 @@ export default class columnManager {
       }
       if (column.children) {
         let colSpan = 0
-        column.children.forEach(subColumn => {
+        column.children.forEach((subColumn) => {
           traverse(subColumn, column)
           colSpan += subColumn.colSpan
         })
@@ -149,7 +178,7 @@ export default class columnManager {
       }
     }
 
-    columns.forEach(column => {
+    columns.forEach((column) => {
       column.level = 1
       traverse(column)
     })
@@ -159,10 +188,10 @@ export default class columnManager {
       rows.push([])
     }
 
-    const getAllColumns = columns => {
+    const getAllColumns = (columns) => {
       const _columns = _.cloneDeep(columns)
       const result = []
-      _columns.forEach(column => {
+      _columns.forEach((column) => {
         if (column.show) {
           result.push(column)
 
@@ -176,7 +205,7 @@ export default class columnManager {
 
     const allColumns = getAllColumns(columns)
 
-    allColumns.forEach(column => {
+    allColumns.forEach((column) => {
       if (!column.children) {
         column.rowSpan = maxLevel - column.level + 1
         for (let i = column.level - 1; i < maxLevel; i++) {
@@ -185,7 +214,7 @@ export default class columnManager {
           } else {
             rows[i].push({
               ...column,
-              rowSpan: 0
+              rowSpan: 0,
             })
           }
         }
@@ -248,7 +277,7 @@ export default class columnManager {
 
   _leafColumns(columns) {
     const leafColumns = []
-    columns.forEach(column => {
+    columns.forEach((column) => {
       if (!column.children) {
         leafColumns.push(column)
       } else {
