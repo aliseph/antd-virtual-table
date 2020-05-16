@@ -45,7 +45,7 @@ export default {
         column: { onDbclick },
       } = this
       if (onDbclick) {
-        onDbclick(this.column, record)
+        onDbclick(this.column, record, e)
       }
       this.$emit('dblclickRow', record)
     },

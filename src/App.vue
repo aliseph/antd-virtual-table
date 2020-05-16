@@ -31,11 +31,11 @@
 </template>
 
 <script>
-import _ from 'lodash'
+// import _ from 'lodash'
 import VueVirtualTable from "@/components/virtualTable/index.jsx";
 
-// eslint-disable-next-line no-eval
-const calc = eval
+// // eslint-disable-next-line no-eval
+// const calc = eval
 
 const data = [];
 for (let i = 0; i < 100; i++) {

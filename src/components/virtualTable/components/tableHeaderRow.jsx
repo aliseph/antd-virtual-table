@@ -156,7 +156,7 @@ export default {
             <tableHeaderCell
               onResize={onResize}
               column={column}
-              key={column.index}
+              key={index}
               onSorted={onSorted}
               onInvisible={onInvisible}
               onFilter={onFilter}
