@@ -6,11 +6,11 @@
     </a-radio-group>
     <span>
       &nbsp;&nbsp;列数：
-      <a-input-number :min="1" :max="10" v-model="columnLength" @change="onChange" />
+      <a-input-number :min="1" v-model="columnLength" @change="onChange" />
     </span>
     <span v-if="multiHeaders==0">
       &nbsp;&nbsp;行数：
-      <a-input-number :min="1" :max="10" v-model="rowLength" @change="onChange" />
+      <a-input-number :min="1" v-model="rowLength" @change="onChange" />
     </span>
     &nbsp;&nbsp;
     <a-button type="primary" @click="onChange">重新生成数据</a-button>&nbsp;&nbsp;
