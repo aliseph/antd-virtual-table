@@ -186,8 +186,6 @@ export default class scrollManager {
   }
 
   onScrollLeft(offsetX) {
-    // eslint-disable-next-line no-console
-    console.log('onScrollLeft', offsetX)
     this.offsetX = offsetX
     if (
       this.lastClusterColumnNum !=
@@ -216,8 +214,6 @@ export default class scrollManager {
     if (!this.isClusterizeX) {
       this.showColumns = this.columnManager.centerLeafColumns()
     } else {
-      // eslint-disable-next-line no-console
-      console.log('updateColumnsByX', this.lastStartColumn)
       this.offsetLeft = this.columnManager
         .centerLeafColumns()
         .slice(0, this.lastStartColumn)

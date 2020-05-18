@@ -120,8 +120,6 @@ export default {
       }
     },
     loading(value) {
-      // eslint-disable-next-line no-console
-      console.log('---loading---')
       this.scrollTop()
 
       if (!value) {
@@ -225,6 +223,8 @@ export default {
       }
 
       if (update) {
+        this.offsetLeft = this.scrollManager.offsetLeft
+        this.offsetTop = this.scrollManager.offsetTop
         this.updateObservable.next()
       }
     },
@@ -235,10 +235,7 @@ export default {
     },
     updateTable() {
       this.showColumns = this.scrollManager.showColumns
-      this.offsetLeft = this.scrollManager.offsetLeft
-
       this.showRows = this.scrollManager.showRows
-      this.offsetTop = this.scrollManager.offsetTop
     },
     updateRows() {
       this.scrollManager.updateRows(this.rows)
@@ -395,20 +392,26 @@ export default {
       const onSorted = (sort, column) => {
         this.$emit('sorted', sort, column)
         this.scrollManager.setOrder(sort, column.dataIndex)
-        this.initOptions()
+        this.initObservable.next()
       }
 
       const onInvisible = (column) => {
         const currentDataList = this.columnManager.columnList(
           this.currentColumns
         )
-        let realRecord = currentDataList.find(
+        const index = currentDataList.findIndex(
           (data) => data.dataIndex == column.dataIndex
         )
-        realRecord = realRecord || {}
-        realRecord.show = !realRecord.show
+        currentDataList[index] = {
+          ...currentDataList[index],
+          show: !currentDataList[index].show,
+        }
+        this.currentColumns = this.columnManager.columnTree(currentDataList)
+
         this.columnManager = this.columnManager.reset(this.currentColumns)
-        this.initOptions()
+        this.scrollManager.updateColumnsByX()
+
+        this.initObservable.next()
         // this.$nextTick(() => this.scrollTop())
         this.$emit('invisible', column)
       }
@@ -430,13 +433,16 @@ export default {
         const currentDataList = this.columnManager.columnList(
           this.currentColumns
         )
-        let realRecord = currentDataList.find(
+        const index = currentDataList.findIndex(
           (data) => data.dataIndex == column.dataIndex
         )
-        realRecord = realRecord || {}
-        realRecord.width = width
+        currentDataList[index] = { ...currentDataList[index], width }
+        this.currentColumns = this.columnManager.columnTree(currentDataList)
+
         this.columnManager = this.columnManager.reset(this.currentColumns)
-        this.initOptions()
+        this.scrollManager.updateColumnsByX()
+
+        this.initObservable.next()
       }
 
       return (
@@ -604,6 +610,8 @@ export default {
         this.scrollManager = this.scrollManager.reset(
           this.rows,
           this.columnManager,
+          this.offsetX,
+          this.offsetY,
           this.$refs
         )
         this.initObservable.next()
@@ -630,7 +638,7 @@ export default {
     } = this
     const onUpdateColumns = (columns) => {
       this.columnManager = this.columnManager.reset(columns)
-      this.initOptions()
+      this.initObservable.next()
     }
 
     // const resize = () => {
@@ -642,7 +650,7 @@ export default {
       this.filterColumns = [...columns]
       this.$emit('filter', this.filterColumns)
       this.scrollTop()
-      this.initOptions()
+      this.initObservable.next()
     }
 
     return (

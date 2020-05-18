@@ -24,8 +24,33 @@ export default class columnManager {
     return result
   }
 
+  arrayToTree(array, id = 'id', pid = 'pid', children = 'children') {
+    const data = _.cloneDeep(array)
+    const result = []
+    const hash = {}
+    data.forEach((item, index) => {
+      item.index = index
+      hash[data[index][id]] = data[index]
+    })
+
+    data.forEach((item) => {
+      const hashVP = hash[item[pid]]
+      if (hashVP) {
+        !hashVP[children] && (hashVP[children] = [])
+        hashVP[children].push(item)
+      } else {
+        result.push(item)
+      }
+    })
+    return result
+  }
+
   columnList(columns) {
     return this.treeToArray(columns, 'dataIndex', 'parentDataIndex')
+  }
+
+  columnTree(columns) {
+    return this.arrayToTree(columns, 'dataIndex', 'parentDataIndex', 'chidlren')
   }
 
   isAnyColumnsFilter() {
